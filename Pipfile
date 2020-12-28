@@ -1,0 +1,22 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+
+[packages]
+flask = "*"
+requests = "*"
+apscheduler = "*"
+lxml = "*"
+mariadb = "*"
+psycopg2-binary = "*"
+numpy = "*"
+pendulum = "*"
+gpxplotter = "*"
+pydantic = "*"
+
+[requires]
+python_version = "3.8"

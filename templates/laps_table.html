@@ -1,0 +1,38 @@
+<html><body>
+<table border="1">
+<TR>
+   <TH>id</th>
+   <TH>start</th>
+   <TH>end</th>
+   <TH>odo[km]</th>
+   <TH>soc[%]</th>
+   <TH>rng_rated[km]</th>
+   <TH>time</th>
+   <TH>dist[km]</th>
+   <TH>d_rng_rated[km]</th>
+   <TH>speed[km/h]</th>
+   <TH>energy/lap[kW]</th>
+   <TH>energy/hour[kW]</th>
+   <TH>energy_left[kW]</th>
+   <TH>t_out[C]</th>
+</TR>
+{% for item in items %}
+<TR>
+   <TD>{{item.id}}</TD>
+   <TD>{{item.start_time}}</TD>
+   <TD>{{item.end_time}}</TD>
+   <TD>{{'%.2f' % item.odo}}</TD>
+   <TD>{{'%.2f' % item.soc}}</TD>
+   <TD>{{'%.2f' % item.rng_rated}}</TD>
+   <TD>{{item.lap_time}}</TD>
+   <TD>{{'%.2f' % item.lap_dist}}</TD>
+   <TD>{{'%.2f' % item.d_rng_rated}}</TD>
+   <TD>{{'%.2f' % item.lap_speed}}</TD>
+   <TD>{{'%.2f' % item.d_energy}}</TD>
+   <TD>{{'%.2f' % item.energy_hour}}</TD>
+   <TD>{{'%.2f' % item.energy_left}}</TD>
+   <TD>{{'%.2f' % item.t_out}}</TD>
+</TR>
+{% endfor %}
+</table>
+</body></html>
