@@ -4,7 +4,7 @@ from psycopg2 import pool
 from collections import namedtuple
 import datetime
 
-from ds_types import CarStatus
+from ds_types import CarStatus, Configuration
 
 _car_data = {}
 
@@ -23,11 +23,11 @@ class TeslamateDataSource:
         if not TeslamateDataSource.postgreSQL_pool:
             TeslamateDataSource.postgreSQL_pool = \
                 psycopg2.pool.SimpleConnectionPool(1, 10,
-                                                   user = os.environ.get("TM_DB_USER", "teslamate"),
-                                                   password = os.environ.get("TM_DB_PASS", "secret"),
-                                                   host = os.environ.get("TM_DB_HOST", "127.0.0.1"),
-                                                   port = os.environ.get("TM_DB_PORT", "5432"),
-                                                   database = os.environ.get("TM_DB_NAME", "teslamate"))
+                                                   user=os.environ.get("TM_DB_USER", "teslamate"),
+                                                   password=os.environ.get("TM_DB_PASS", "secret"),
+                                                   host=os.environ.get("TM_DB_HOST", "127.0.0.1"),
+                                                   port=os.environ.get("TM_DB_PORT", "5432"),
+                                                   database=os.environ.get("TM_DB_NAME", "teslamate"))
 
     def _cursor_to_list(self, cursor):
         out_data = []
@@ -43,17 +43,31 @@ class TeslamateDataSource:
         row = cursor.fetchone()
         return dict(zip(column_names, row))
 
-    def get_car_status(self) -> CarStatus:
+    def get_car_status(self, configuration: Configuration) -> CarStatus:
+        """
+        note there are two types of rows, one contains all but elevation, the other one altitude.
+        That's why we need two reads
+        """
         status = None
         try:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
             if ps_connection:
-                pos_cursor = ps_connection.cursor()
-                pos_cursor.execute("select * from positions order by date desc limit 1")
-                out_data = self._cursor_one_to_dict(pos_cursor)
-                pos_cursor.close()
-                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
+                # get the one containing most of the values
+                pos_cursor_1 = ps_connection.cursor()
+                pos_cursor_1.execute("select car.name, pos.* from positions pos JOIN cars car on pos.car_id = car.id WHERE car_id = %s::integer AND usable_battery_level IS NOT NULL order by date desc limit 1",
+                                   (configuration.carId,))
+                out_data = self._cursor_one_to_dict(pos_cursor_1)
+                pos_cursor_1.close()
 
+                # get the one most recent one containing elevation (take other fields as well)
+                pos_cursor_2 = ps_connection.cursor()
+                pos_cursor_2.execute("select latitude, longitude, speed, power, odometer, elevation from positions WHERE car_id = %s::integer AND elevation IS NOT NULL order by date desc limit 1",
+                                   (configuration.carId,))
+                out_data_2 = self._cursor_one_to_dict(pos_cursor_2)
+                out_data.update(out_data_2)  # just add the extra fields
+                pos_cursor_2.close()
+
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
                 status = CarStatus(**out_data)
             else:
                 raise Exception("no connection from pool")
@@ -62,20 +76,19 @@ class TeslamateDataSource:
             print("Error while connecting to PostgreSQL", error)
         return status
 
-
-    def get_car_positions(self, config):
+    def get_car_positions(self, configuration: Configuration):
         out_data = []
         try:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
             if ps_connection:
                 pos_cursor = ps_connection.cursor()
-                if config["from_time"] is not None:
-                    pos_cursor.execute("SELECT * FROM positions where date >= %s::timestamptz ORDER BY date",
-                                (datetime.datetime.fromtimestamp(config['from_time'].in_tz('utc').timestamp()),))
+                if configuration.startTime is not None:
+                    pos_cursor.execute("SELECT * FROM positions where date >= %s::timestamptz AND car_id = %s::integer AND usable_battery_level IS NOT NULL ORDER BY date",
+                                (datetime.datetime.fromtimestamp(configuration.startTime.timestamp()), configuration.carId))
                 else:
                     pos_cursor.execute(
-                        "SELECT * FROM positions where date between (now() - '%s hour'::interval) and (now() - '%s hour'::interval) ORDER BY date",
-                        (config['hours'], 0))
+                        "SELECT * FROM positions where date between (now() - '%s hour'::interval) and (now() - '%s hour'::interval) AND car_id = %s::integer AND usable_battery_level IS NOT NULL ORDER BY date",
+                        (configuration.hours, 0, configuration.carId))
                 print("The number of parts: ", pos_cursor.rowcount)
 
                 rdef = namedtuple('dataset', ' '.join([x[0] for x in pos_cursor.description]))

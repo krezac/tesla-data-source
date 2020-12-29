@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "carId": 1,
+  "startLatitude": 49.321039,
+  "startLongitude": 13.704535,
+  "startRadius": 100,
+  "startTime": "2020-12-28T10:30:00.000Z",
+  "hours": 24,
+  "mergeFromLap": 1,
+  "lapsMerged": 1,
+  "consumptionRated": 14.7,
+  "statusRefreshSeconds": 5,
+  "lapsRefreshSeconds": 10,
+  "fioRefreshSeconds": 900,
+  "defaultMapZoom": 16
+}

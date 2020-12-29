@@ -1,45 +1,45 @@
-from lxml import etree
+from typing import Callable
+import requests
+import pendulum
+import os
 
-_balance_info = {}
+from ds_types import Configuration, Balance
 
-# TODO this is just sample response from Fio API documentation
-mock_data = """<AccountStatement>
-<Info>
-<accountId>2111111111</accountId>
-<bankId>2010</bankId>
-<currency>CZK</currency>
-<iban>CZ7920100000002111111111</iban>
-<bic>FIOBCZPPXXX</bic>
-<openingBalance>7356.22</openingBalance>
-<closingBalance>7321.22</closingBalance>
-<dateStart>2012-07-01+02:00</dateStart>
-<dateEnd>2012-07-31+02:00</dateEnd>
-<idFrom>1147608196</idFrom>
-<idTo>1147608197</idTo>
-</Info>
-</AccountStatement>"""
-
+_balance_info: Balance = None
+_get_configuration_func = None
 
 def update_balance():
     print("updating balance")
     global _balance_info
+    global _get_configuration_func
 
-    # TODO use requests to get the data
-    root = etree.fromstring(mock_data)
-    balance_node = etree.XPath("/AccountStatement/Info/closingBalance/text()")
-    currency_node = etree.XPath("/AccountStatement/Info/currency/text()")
+    today = pendulum.today().format("YYYY-MM-DD")
+    token = os.environ.get("FIO_API_TOKEN", None)
+    if token:
+        data = requests.get(f"https://www.fio.cz/ib_api/rest/periods/{token}/{today}/{today}/transactions.json")
+        if data and data.status_code == 200:
+            json_data = data.json()
+            print(json_data)
 
-    _balance_info = {
-        'balance': (balance_node(root)[0]),
-        'currency': currency_node(root)[0]
-    }
+            _balance_info = Balance(amount=json_data["accountStatement"]["info"]["closingBalance"],
+                                    currency=json_data["accountStatement"]["info"]["currency"])
+        else:
+            _balance_info = Balance(amount=0.0, currency='???')
+    else:
+        _balance_info = Balance(amount=0.0, currency='???')
     print("updating balance done")
 
 
-def get_balance_info():
+def get_balance_info() -> Balance:
     global _balance_info
+
+    if not _balance_info:
+        update_balance()
+
     return _balance_info
 
 
-def register_job(scheduler):
-    scheduler.add_job(update_balance, 'interval', seconds=19)
+def register_jobs(scheduler, get_configuration_func: Callable[[], Configuration]):
+    global _get_configuration_func
+    _get_configuration_func = get_configuration_func
+    scheduler.add_job(update_balance, 'interval', seconds=get_configuration_func().fioRefreshSeconds)

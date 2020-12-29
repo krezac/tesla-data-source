@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
-    <script src="/static/jquery-3.5.1.min.js"></script>
+    <script src="static/jquery-3.5.1.min.js"></script>
 
 
 	
@@ -24,8 +24,25 @@
 <div id="mapid" style="width: 600px; height: 400px;"></div>
 <div id="status_text"></div>
 <script>
+    function getStatusTextItem(label, value, defaultValue, unit) {
+        if (!value) {
+            value = defaultValue;
+        }
+        return `<b>${label}:</b> ${value}${unit}<br/>`
+    }
+
+    function getStatusText(car_status) {
+        statusText = `<b>${car_status.name}</b><br/><br/>`;
+        statusText += getStatusTextItem("Odo", Math.round(car_status.odometer), "---", "km");
+        statusText += getStatusTextItem("Speed", Math.round(car_status.speed), "0", "km/h");
+        statusText += getStatusTextItem("Elevation", car_status.elevation, "---", "m");
+        statusText += getStatusTextItem("Power", car_status.power, "0", "kW");
+        statusText += getStatusTextItem("SOC", car_status.usable_battery_level, "---", "%");
+        return statusText;
+    }
+
     $(document).ready(function () {
-        var mymap = L.map('mapid').setView([0.0, 0.0], 16);
+        var mymap = L.map('mapid').setView([0.0, 0.0], {{ zoom }});
 
         var geojsonMarkerOptions = {
             radius: 8,
@@ -54,17 +71,13 @@
 
         (function worker() {
           $.ajax({
-            url: '/car_status',
+            url: 'car_status_json',
             dataType: 'json',
           })
           .done(function(data) {
-                car_status = data
+              car_status = data
               circleMarker.setLatLng(new L.LatLng(car_status.latitude, car_status.longitude));
-                statusText = `
-                <b>Time:</b> ${new Date().toLocaleString()}<br/>
-                <b>Odo:</b> ${car_status.odometer}km<br/>
-                <b>SOC:</b> ${car_status.battery_level}%<br/>`;
-              circleMarker._popup.setContent(statusText)
+              circleMarker._popup.setContent(getStatusText(car_status))
               $("#status_text").html(statusText);
             })
           .fail(function() {

@@ -12,6 +12,7 @@ from jinja2 import Template
 import urllib
 import pendulum
 import datetime
+from ds_types import Configuration
 
 csv_template = """id,start,end,odo,time,dist,speed,soc,d_soc,rng_ideal,d_rng_ideal,rng_est,d_rng_est,rng_rated,d_rng_rated,energy_lap,energy_hour,energy_left,t_in,t_out
 {% for item in items -%}
@@ -24,8 +25,7 @@ html_template = """
 """
 
 
-
-def find_laps(config, segment, region=10, min_time=5, start_idx=0):
+def find_laps(configuration: Configuration, segment, region=10, min_time=5, start_idx=0):
     """Return laps given latitude & longitude data.
 
     We assume that the first point defines the start and
@@ -49,7 +49,9 @@ def find_laps(config, segment, region=10, min_time=5, start_idx=0):
 
     """
     points = [(pt.latitude, pt.longitude) for pt in segment]
-    start = (config['lat'], config["lon"]) if config['lat'] is not None and config["lon"] else points[start_idx]
+    start = (configuration.startLatitude, configuration.startLongitude) \
+        if configuration.startLatitude is not None and configuration.startLongitude \
+        else points[start_idx]
     time = [pt.date for pt in segment]
     # For locating the tracks, we look for point which are such that
     # we enter the starting region and pass through it.
@@ -82,14 +84,14 @@ def find_laps(config, segment, region=10, min_time=5, start_idx=0):
             laps.append({"id": str(i + 1), "from": idx, "to": enter_point[i + 1]})
         except IndexError:
             laps.append({"id": str(i + 1), "from": idx, "to": len(points) - 1})
-    agg_laps = aggregate_laps(config, laps)
-    segment_laps = get_segment_laps(config, segment, agg_laps)
+    agg_laps = aggregate_laps(configuration, laps)
+    segment_laps = get_segment_laps(configuration, segment, agg_laps)
     return segment_laps
 
 
-def aggregate_laps(config, laps):
-    agg_start = config["merge_from_lap"]
-    agg_count = config["lap_merge"]
+def aggregate_laps(configuration: Configuration, laps):
+    agg_start = configuration.mergeFromLap
+    agg_count = configuration.lapsMerged
 
     if agg_count <= 1 or len(laps) <= agg_start:
         return laps
@@ -116,7 +118,7 @@ def aggregate_laps(config, laps):
     return agg_laps
 
 
-def extract_lap_info(config, lap_id, lap_data):
+def extract_lap_info(configuration: Configuration, lap_id, lap_data):
     """ Lap data from database:
     xx id |
     xx date           |
@@ -154,8 +156,8 @@ def extract_lap_info(config, lap_id, lap_data):
         "start_time": sd.in_tz("Europe/Prague").format("DD.MM.YY HH:mm.ss"),
         "end_time": ed.in_tz("Europe/Prague").format("DD.MM.YY HH:mm.ss"),
         "odo": lap_data[-1].odometer,
-        "t_in": lap_data[-1].inside_temp if lap_data[-1].inside_temp else 999,
-        "t_out": lap_data[-1].outside_temp if lap_data[-1].outside_temp else 999,
+        "t_in": lap_data[-1].inside_temp if lap_data[-1].inside_temp is not None else lap_data[0].inside_temp if lap_data[0].inside_temp is not None else 999,
+        "t_out": lap_data[-1].outside_temp if lap_data[-1].outside_temp is not None else lap_data[0].outside_temp if lap_data[0].outside_temp is not None else 999,
         "lap_time": str(lap_time),
         "lap_speed": lap_dist / lap_time.total_seconds() * 3600,
         "lap_dist": lap_dist,
@@ -167,15 +169,15 @@ def extract_lap_info(config, lap_id, lap_data):
         "d_rng_est": lap_data[0].est_battery_range_km - lap_data[-1].est_battery_range_km if lap_data[0].est_battery_range_km and lap_data[-1].est_battery_range_km else 0,
         "rng_rated": lap_data[-1].rated_battery_range_km if lap_data[-1].rated_battery_range_km else 0,
         "d_rng_rated": lap_data[0].rated_battery_range_km - lap_data[-1].rated_battery_range_km if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "d_energy": config["consumption_rated"] / 100 * (
+        "d_energy": configuration.consumptionRated / 100 * float(
                     lap_data[0].rated_battery_range_km - lap_data[-1].rated_battery_range_km) if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "energy_hour": (config["consumption_rated"] / 100 * (lap_data[0].rated_battery_range_km - lap_data[
+        "energy_hour": (configuration.consumptionRated / 100 * float(lap_data[0].rated_battery_range_km - lap_data[
             -1].rated_battery_range_km)) / lap_time.total_seconds() * 3600.0 if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "energy_left": config["consumption_rated"] / 100 * float(lap_data[-1].rated_battery_range_km) if lap_data[-1].rated_battery_range_km else 0,
+        "energy_left": configuration.consumptionRated / 100 * float(lap_data[-1].rated_battery_range_km) if lap_data[-1].rated_battery_range_km else 0,
     }
 
 
-def get_segment_laps(config, segment, laps):
+def get_segment_laps(configuration: Configuration, segment, laps):
     """Extract the segment laps.  """
     segment_laps = []
     for i, lap in enumerate(laps):
@@ -183,7 +185,7 @@ def get_segment_laps(config, segment, laps):
         start = lap["from"]
         stop = lap["to"] + 1
         lap_data = segment[start:stop]
-        new_lap = extract_lap_info(config, lap_id, lap_data)
+        new_lap = extract_lap_info(configuration, lap_id, lap_data)
         segment_laps.append(new_lap)
     return segment_laps
 
