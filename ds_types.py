@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, validator
+from typing import Optional, List
 from datetime import datetime
 import pendulum
 
@@ -19,10 +19,11 @@ class Configuration(BaseModel):
     lapsRefreshSeconds: int
     fioRefreshSeconds: int
     defaultMapZoom: int
+    previousLaps: int
 
 
 class CarStatus(BaseModel):
-    # id: int
+    id: int
     date: datetime
     latitude: Optional[float]
     longitude: Optional[float]
@@ -54,3 +55,68 @@ class CarStatus(BaseModel):
 class Balance(BaseModel):
     amount: float
     currency: str
+
+
+class LapStatus(BaseModel):
+    """
+    raw fields only
+    """
+    id: str  # string because of aggregating
+    startTime: pendulum.DateTime
+    endTime: Optional[pendulum.DateTime]
+    startOdo: float
+    endOdo: Optional[float]
+    insideTemp: Optional[float]
+    outsideTemp: Optional[float]
+
+
+    startSOC: float
+    endSOC: float
+    #usedSoc: float
+
+    startRangeIdeal: float
+    endRangeIdeal: float
+    #usedRangeIdeal: float
+
+    startRangeEst: float
+    endRangeEst: float
+    #usedRangeEst: float
+
+    startRangeRated: float
+    endRangeRated: float
+    #usedRangeRated: float
+
+    consumptionRated: float
+    finished: bool
+
+    # calculated fields
+    duration: Optional[pendulum.Duration]
+
+    @validator('duration', always=True)
+    def set_duration(cls, v, values) -> pendulum.Duration:
+        return values['endTime'] - values['startTime']
+
+    distance: Optional[float]
+
+    @validator('distance', always=True)
+    def set_distance(cls, v, values) -> float:
+        return values['endOdo'] - values['startOdo']
+
+    avgSpeed: Optional[float]
+
+    @validator('avgSpeed', always=True)
+    def set_avg_speed(cls, v, values) -> float:
+        return values['distance'] / values['duration'].seconds * 3600
+
+    energy: Optional[float]
+
+    @validator('energy', always=True)
+    def set_energy(cls, v, values) -> float:
+        return values['consumptionRated'] / 100 * float(values['startRangeRated'] - values['endRangeRated'])
+
+
+class LapsResponse(BaseModel):
+    total: Optional[LapStatus]
+    previous: List[LapStatus]
+    recent: Optional[LapStatus]
+

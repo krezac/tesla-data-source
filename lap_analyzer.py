@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
-import psycopg2
-import os
-import sys
 import numpy as np
 from gpxplotter.gpxread import vincenty
-from collections import namedtuple
-from jinja2 import Template
-import urllib
 import pendulum
-import datetime
-from ds_types import Configuration
+from ds_types import Configuration, LapStatus
+from typing import List
 
 csv_template = """id,start,end,odo,time,dist,speed,soc,d_soc,rng_ideal,d_rng_ideal,rng_est,d_rng_est,rng_rated,d_rng_rated,energy_lap,energy_hour,energy_left,t_in,t_out
 {% for item in items -%}
@@ -118,7 +110,7 @@ def aggregate_laps(configuration: Configuration, laps):
     return agg_laps
 
 
-def extract_lap_info(configuration: Configuration, lap_id, lap_data):
+def extract_lap_info(configuration: Configuration, lap_id, lap_data) -> LapStatus:
     """ Lap data from database:
     xx id |
     xx date           |
@@ -146,38 +138,35 @@ def extract_lap_info(configuration: Configuration, lap_id, lap_data):
     xx est_battery_range_km |
     xx rated_battery_range_km
     """
-    tz = pendulum.timezone('Europe/Paris')
-    sd = pendulum.instance(lap_data[0].date, 'utc')
-    ed = pendulum.instance(lap_data[-1].date, 'utc')
-    lap_time = lap_data[-1].date - lap_data[0].date
-    lap_dist = lap_data[-1].odometer - lap_data[0].odometer
-    return {
-        "id": lap_id,
-        "start_time": sd.in_tz("Europe/Prague").format("DD.MM.YY HH:mm.ss"),
-        "end_time": ed.in_tz("Europe/Prague").format("DD.MM.YY HH:mm.ss"),
-        "odo": lap_data[-1].odometer,
-        "t_in": lap_data[-1].inside_temp if lap_data[-1].inside_temp is not None else lap_data[0].inside_temp if lap_data[0].inside_temp is not None else 999,
-        "t_out": lap_data[-1].outside_temp if lap_data[-1].outside_temp is not None else lap_data[0].outside_temp if lap_data[0].outside_temp is not None else 999,
-        "lap_time": str(lap_time),
-        "lap_speed": lap_dist / lap_time.total_seconds() * 3600,
-        "lap_dist": lap_dist,
-        "soc": lap_data[-1].battery_level,
-        "d_soc": lap_data[0].battery_level - lap_data[-1].battery_level,
-        "rng_ideal": lap_data[-1].ideal_battery_range_km if lap_data[-1].ideal_battery_range_km else 0,
-        "d_rng_ideal": lap_data[0].ideal_battery_range_km - lap_data[-1].ideal_battery_range_km if lap_data[0].ideal_battery_range_km and lap_data[-1].ideal_battery_range_km else 0,
-        "rng_est": lap_data[-1].est_battery_range_km if lap_data[-1].est_battery_range_km else 0,
-        "d_rng_est": lap_data[0].est_battery_range_km - lap_data[-1].est_battery_range_km if lap_data[0].est_battery_range_km and lap_data[-1].est_battery_range_km else 0,
-        "rng_rated": lap_data[-1].rated_battery_range_km if lap_data[-1].rated_battery_range_km else 0,
-        "d_rng_rated": lap_data[0].rated_battery_range_km - lap_data[-1].rated_battery_range_km if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "d_energy": configuration.consumptionRated / 100 * float(
-                    lap_data[0].rated_battery_range_km - lap_data[-1].rated_battery_range_km) if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "energy_hour": (configuration.consumptionRated / 100 * float(lap_data[0].rated_battery_range_km - lap_data[
-            -1].rated_battery_range_km)) / lap_time.total_seconds() * 3600.0 if lap_data[0].rated_battery_range_km and lap_data[-1].rated_battery_range_km else 0,
-        "energy_left": configuration.consumptionRated / 100 * float(lap_data[-1].rated_battery_range_km) if lap_data[-1].rated_battery_range_km else 0,
-    }
+    return LapStatus(
+        id=lap_id,
+        startTime=pendulum.instance(lap_data[0].date, 'utc'),
+        endTime=pendulum.instance(lap_data[-1].date, 'utc'),
+
+        startOdo=lap_data[0].odometer,
+        endOdo=lap_data[-1].odometer,
+
+        insideTemp=lap_data[-1].inside_temp,
+        outsideTemp=lap_data[-1].outside_temp,
+
+        startSOC=lap_data[0].usable_battery_level,
+        endSOC=lap_data[-1].usable_battery_level,
+
+        startRangeIdeal=lap_data[0].ideal_battery_range_km,
+        endRangeIdeal=lap_data[-1].ideal_battery_range_km,
+
+        startRangeEst=lap_data[0].est_battery_range_km,
+        endRangeEst=lap_data[-1].est_battery_range_km,
+
+        startRangeRated=lap_data[0].rated_battery_range_km,
+        endRangeRated=lap_data[-1].rated_battery_range_km,
+
+        consumptionRated=configuration.consumptionRated,
+        finished=True  # TODO not true
+    )
 
 
-def get_segment_laps(configuration: Configuration, segment, laps):
+def get_segment_laps(configuration: Configuration, segment, laps) -> List[LapStatus]:
     """Extract the segment laps.  """
     segment_laps = []
     for i, lap in enumerate(laps):

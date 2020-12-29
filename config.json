@@ -12,5 +12,6 @@
   "statusRefreshSeconds": 5,
   "lapsRefreshSeconds": 10,
   "fioRefreshSeconds": 900,
-  "defaultMapZoom": 16
+  "defaultMapZoom": 16,
+  "previousLaps": 10
 }

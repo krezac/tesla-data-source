@@ -13,7 +13,7 @@ def update_balance():
     global _balance_info
     global _get_configuration_func
 
-    today = pendulum.today().format("YYYY-MM-DD")
+    today = pendulum.today(tz="utc").format("YYYY-MM-DD")
     token = os.environ.get("FIO_API_TOKEN", None)
     if token:
         data = requests.get(f"https://www.fio.cz/ib_api/rest/periods/{token}/{today}/{today}/transactions.json")

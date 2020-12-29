@@ -1,4 +1,7 @@
 <html><body>
+
+<h2>Total</h2>
+
 <table border="1">
 <TR>
    <TH>id</th>
@@ -7,7 +10,7 @@
    <TH>odo[km]</th>
    <TH>soc[%]</th>
    <TH>rng_rated[km]</th>
-   <TH>time</th>
+   <TH>time[min]</th>
    <TH>dist[km]</th>
    <TH>d_rng_rated[km]</th>
    <TH>speed[km/h]</th>
@@ -16,22 +19,98 @@
    <TH>energy_left[kW]</th>
    <TH>t_out[C]</th>
 </TR>
-{% for item in items %}
+<TR>
+   <TD>{{items.total.id}}</TD>
+   <TD>{{items.total.startTime}}</TD>
+   <TD>{{items.total.endTime}}</TD>
+   <TD>{{'%.2f' % items.total.endOdo}}</TD>
+   <TD>{{'%.2f' % items.total.endSOC}}</TD>
+   <TD>{{'%.2f' % items.total.endRangeRated}}</TD>
+   <TD>{{items.total.duration.in_minutes()}}</TD>
+   <TD>{{'%.2f' % items.total.distance}}</TD>
+   <TD>{{'%.2f' % (items.total.startRangeRated - items.total.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % items.total.avgSpeed}}</TD>
+   <TD>{{'%.2f' % items.total.energy}}</TD>
+   <TD>{{'%.2f' % (items.total.energy / items.total.duration.in_seconds() * 3600)}}</TD>
+   <TD>{{'%.2f' % (items.total.consumptionRated / 100 * items.total.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % items.total.outsideTemp if items.total.outsideTemp != None else "---" }}</TD>
+</TR>
+</table>
+
+
+<h2>Recent lap</h2>
+
+<table border="1">
+<TR>
+   <TH>id</th>
+   <TH>start</th>
+   <TH>end</th>
+   <TH>odo[km]</th>
+   <TH>soc[%]</th>
+   <TH>rng_rated[km]</th>
+   <TH>time[min]</th>
+   <TH>dist[km]</th>
+   <TH>d_rng_rated[km]</th>
+   <TH>speed[km/h]</th>
+   <TH>energy/lap[kW]</th>
+   <TH>energy/hour[kW]</th>
+   <TH>energy_left[kW]</th>
+   <TH>t_out[C]</th>
+</TR>
+<TR>
+   <TD>{{items.recent.id}}</TD>
+   <TD>{{items.recent.startTime}}</TD>
+   <TD>{{items.recent.endTime}}</TD>
+   <TD>{{'%.2f' % items.recent.endOdo}}</TD>
+   <TD>{{'%.2f' % items.recent.endSOC}}</TD>
+   <TD>{{'%.2f' % items.recent.endRangeRated}}</TD>
+   <TD>{{items.recent.duration.in_minutes()}}</TD>
+   <TD>{{'%.2f' % items.recent.distance}}</TD>
+   <TD>{{'%.2f' % (items.recent.startRangeRated - items.recent.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % items.recent.avgSpeed}}</TD>
+   <TD>{{'%.2f' % items.recent.energy}}</TD>
+   <TD>{{'%.2f' % (items.recent.energy / items.recent.duration.in_seconds() * 3600)}}</TD>
+   <TD>{{'%.2f' % (items.recent.consumptionRated / 100 * items.recent.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % items.recent.outsideTemp if items.recent.outsideTemp != None else "---" }}</TD>
+</TR>
+</table>
+
+
+<h2>Previous</h2>
+
+<table border="1">
+<TR>
+   <TH>id</th>
+   <TH>start</th>
+   <TH>end</th>
+   <TH>odo[km]</th>
+   <TH>soc[%]</th>
+   <TH>rng_rated[km]</th>
+   <TH>time[min]</th>
+   <TH>dist[km]</th>
+   <TH>d_rng_rated[km]</th>
+   <TH>speed[km/h]</th>
+   <TH>energy/lap[kW]</th>
+   <TH>energy/hour[kW]</th>
+   <TH>energy_left[kW]</th>
+   <TH>t_out[C]</th>
+</TR>
+{% for item in items.previous %}
 <TR>
    <TD>{{item.id}}</TD>
-   <TD>{{item.start_time}}</TD>
-   <TD>{{item.end_time}}</TD>
-   <TD>{{'%.2f' % item.odo}}</TD>
-   <TD>{{'%.2f' % item.soc}}</TD>
-   <TD>{{'%.2f' % item.rng_rated}}</TD>
-   <TD>{{item.lap_time}}</TD>
-   <TD>{{'%.2f' % item.lap_dist}}</TD>
-   <TD>{{'%.2f' % item.d_rng_rated}}</TD>
-   <TD>{{'%.2f' % item.lap_speed}}</TD>
-   <TD>{{'%.2f' % item.d_energy}}</TD>
-   <TD>{{'%.2f' % item.energy_hour}}</TD>
-   <TD>{{'%.2f' % item.energy_left}}</TD>
-   <TD>{{'%.2f' % item.t_out}}</TD>
+   <TD>{{item.startTime}}</TD>
+   <TD>{{item.endTime}}</TD>
+   <TD>{{'%.2f' % item.endOdo}}</TD>
+   <TD>{{'%.2f' % item.endSOC}}</TD>
+   <TD>{{'%.2f' % item.endRangeRated}}</TD>
+   <TD>{{item.duration.in_minutes()}}</TD>
+   <TD>{{'%.2f' % item.distance}}</TD>
+   <TD>{{'%.2f' % (item.startRangeRated - item.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % item.avgSpeed}}</TD>
+   <TD>{{'%.2f' % item.energy}}</TD>
+   <TD>{{'%.2f' % (item.energy / item.duration.in_seconds() * 3600)}}</TD>
+   <TD>{{'%.2f' % (item.consumptionRated / 100 * item.endRangeRated)}}</TD>
+   <TD>{{'%.2f' % item.outsideTemp if item.outsideTemp != None else "---"}}</TD>
 </TR>
 {% endfor %}
 </table>

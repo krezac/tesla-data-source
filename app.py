@@ -1,10 +1,8 @@
 from flask import Flask, request, render_template, Response, abort
 
 import os
-import pendulum
 
 import fio_api
-# import tesla_logger_car_data
 import teslamate_car_data
 import lap_analyzer
 from ds_types import Configuration
@@ -41,23 +39,6 @@ def get_configuration():
     return _configuration
 
 
-def _read_config_from_request():
-    config = {
-        #"lat": request.args.get('lat', default=None, type=float),
-        #"lon": request.args.get('lon', default=None, type=float),
-        #"radius": request.args.get('radius', default=100.0, type=float),
-        "consumption_rated": request.args.get('consumption_rated', default=14.7, type=float),
-        #"hours": request.args.get('hours', default=24, type=int),
-        "format": request.args.get('format', default=None, type=str),
-        #"from_time": request.args.get('from_time', default=None, type=str),
-        #"merge_from_lap": request.args.get('merge_from_lap', default=1, type=int),
-        #"lap_merge": request.args.get('lap_merge', default=1, type=int),
-    }
-    if config["from_time"]:
-        config["from_time"] = pendulum.parse(config["from_time"])
-    return config
-
-
 ###################### main
 @app.route('/')
 def index_page():
@@ -66,7 +47,7 @@ def index_page():
 
 # ########### JSON endpoints (AJAX) ############
 @app.route('/car_status_json')
-def car_status():
+def get_car_status_json():
     if not _configuration.enabled:
         return NOT_ENABLED_JSON
 
@@ -74,8 +55,17 @@ def car_status():
     return Response(status.json() if status else {}, mimetype='application.json')
 
 
+@app.route('/car_laps_json')
+def get_car_laps_json():
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    laps = teslamate_car_data.get_car_laps()
+    return Response(laps.json() if laps else {}, mimetype='application.json')
+
+
 @app.route('/fio_balance_json')
-def get_fio_balance():
+def get_fio_balance_json():
     if not _configuration.enabled:
         return NOT_ENABLED_JSON
 
@@ -83,7 +73,6 @@ def get_fio_balance():
     return Response(balance.json(), mimetype='application.json')
 
 
-# TODO this should be protected somehow
 @app.route('/configuration', methods=['GET', 'POST'])
 def configuration():
     global _configuration
@@ -113,14 +102,21 @@ def car_map():
                            car_status=car_status, title="Car status and position", zoom=_configuration.defaultMapZoom)
 
 
+@app.route('/fio_balance')
+def get_fio_balance():
+    if not _configuration.enabled:
+        return render_template('not_enabled.html')
+
+    balance = fio_api.get_balance_info()
+    return render_template('fio_balance.html', balance=balance, title="Balance")
+
+
 @app.route('/laps_table')
 def get_tm_car_data():
     if not _configuration.enabled:
         return render_template('not_enabled.html')
 
-    # config = _read_config_from_request()
-    positions = teslamate_car_data.get_car_positions(_configuration)
-    items = lap_analyzer.find_laps(_configuration, positions, _configuration.startRadius, 0, -1)
+    items = teslamate_car_data.get_car_laps()
     return render_template('laps_table.html', items=items, title="Laps")
 
 

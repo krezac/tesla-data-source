@@ -61,7 +61,8 @@ The same structure is used to POST to update the config
   "statusRefreshSeconds": 5,
   "lapsRefreshSeconds": 10,
   "fioRefreshSeconds": 900,
-  "defaultMapZoom": 16
+  "defaultMapZoom": 16,
+  "previousLaps": 10
 }
 ```
 
@@ -72,14 +73,15 @@ The same structure is used to POST to update the config
 * startLongitude: longitude of stating point [13.704535]
 * startRadius: radius in meters from starting point used to initiate new lap [100]
 * startTime: time to load and process data from ["2020-12-28T10:30:00.000Z"]
-* hours: if startTime not provided, last xy hours are processed [24]
+* hours: hours to be preocessed from startTime if provided, till now otherwise [24]
 * mergeFromLap: the first lap to be merged [1]
 * lapsMerged: how many laps are merged together [1]
 * consumptionRated: rated consumption of the vehicle [14.7],
 * statusRefreshSeconds: how often status data are refreshed from database [5]
 * lapsRefreshSeconds: how often lap data are refreshed from database [10]
 * fioRefreshSeconds: how often bank account balance is refreshed from bank API [900]
-* defaultMapZoom: zoom level at page load. The higher, the closer (max 19) [16] 
+* defaultMapZoom: zoom level at page load. The higher, the closer (max 19) [16]
+* previousLaps: number of previous laps to be displayed [10]
 
 ## JSON Endpoints
 

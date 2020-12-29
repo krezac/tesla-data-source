@@ -82,13 +82,12 @@ class TeslamateDataSource:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
             if ps_connection:
                 pos_cursor = ps_connection.cursor()
-                if configuration.startTime is not None:
-                    pos_cursor.execute("SELECT * FROM positions where date >= %s::timestamptz AND car_id = %s::integer AND usable_battery_level IS NOT NULL ORDER BY date",
-                                (datetime.datetime.fromtimestamp(configuration.startTime.timestamp()), configuration.carId))
-                else:
-                    pos_cursor.execute(
-                        "SELECT * FROM positions where date between (now() - '%s hour'::interval) and (now() - '%s hour'::interval) AND car_id = %s::integer AND usable_battery_level IS NOT NULL ORDER BY date",
-                        (configuration.hours, 0, configuration.carId))
+                pos_cursor.execute("SELECT * FROM positions where date >= %s::timestamptz AND date <= (%s::timestamptz + '%s hour'::interval) AND car_id = %s::integer AND usable_battery_level IS NOT NULL ORDER BY date",
+                            (datetime.datetime.fromtimestamp(configuration.startTime.timestamp()) if configuration.startTime else datetime.datetime.now(tz="utc").timestamp(),
+                             datetime.datetime.fromtimestamp(configuration.startTime.timestamp()) if configuration.startTime else datetime.datetime.now(tz="utc").timestamp(),
+                             configuration.hours,
+                             configuration.carId))
+                print(pos_cursor.query)
                 print("The number of parts: ", pos_cursor.rowcount)
 
                 rdef = namedtuple('dataset', ' '.join([x[0] for x in pos_cursor.description]))
