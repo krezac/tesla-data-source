@@ -3,8 +3,10 @@
 import numpy as np
 from gpxplotter.gpxread import vincenty
 import pendulum
-from ds_types import Configuration, LapStatus
-from typing import List
+from ds_types import Configuration, LapStatus, LapSplit
+from typing import List, Optional
+from pydantic import BaseModel
+from datetime import datetime
 
 csv_template = """id,start,end,odo,time,dist,speed,soc,d_soc,rng_ideal,d_rng_ideal,rng_est,d_rng_est,rng_rated,d_rng_rated,energy_lap,energy_hour,energy_left,t_in,t_out
 {% for item in items -%}
@@ -12,12 +14,8 @@ csv_template = """id,start,end,odo,time,dist,speed,soc,d_soc,rng_ideal,d_rng_ide
 {% endfor %}
 """
 
-html_template = """
 
-"""
-
-
-def find_laps(configuration: Configuration, segment, region=10, min_time=5, start_idx=0):
+def find_laps(configuration: Configuration, segment, region=10, min_time=5, start_idx=0) -> List[LapSplit]:
     """Return laps given latitude & longitude data.
 
     We assume that the first point defines the start and
@@ -53,64 +51,124 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
     # We want to avoid cases where we jump back and forth across the
     # boundary, so we set a minimum time we should spend inside the
     # region.
-    enter_point = []
-    current = start_idx
-    in_region = True
+    # enter_point = []
+    # current = start_idx
+    # in_region = True
+    # # old code
+    # for i, dist in enumerate(distance):
+    #     if i <= start_idx:
+    #         continue
+    #     if dist < region:  # we are inside the region
+    #         if distance[i - 1] > region:  # came from the outside
+    #             current = i
+    #             in_region = True
+    #     if in_region:
+    #         if dist > region:
+    #             delta_t = time[i] - time[current]
+    #             if min_time < delta_t.total_seconds():
+    #                 enter_point.append(current)
+    #             current = None
+    #             in_region = False
+
+    # new_code
+    lapId = 1
+    splits = []
+    pit_entry_idx = None
+    lap_entry_idx = None
+    in_pit = True
+    current_split = None
+    skip_lead = True
     for i, dist in enumerate(distance):
         if i <= start_idx:
             continue
-        if dist < region:  # we are inside the region
-            if distance[i - 1] > region:  # came from the outside
-                current = i
-                in_region = True
-        if in_region:
+        if skip_lead:  # this is to skip the beginning of data if outside of pit
             if dist > region:
-                delta_t = time[i] - time[current]
-                if min_time < delta_t.total_seconds():
-                    enter_point.append(current)
-                current = None
-                in_region = False
-    laps = []
-    for i, idx in enumerate(enter_point):
-        try:
-            laps.append({"id": str(i + 1), "from": idx, "to": enter_point[i + 1]})
-        except IndexError:
-            laps.append({"id": str(i + 1), "from": idx, "to": len(points) - 1})
-    agg_laps = aggregate_laps(configuration, laps)
-    segment_laps = get_segment_laps(configuration, segment, agg_laps)
-    return segment_laps
+                continue
+            else:
+                skip_lead = False
+
+        if dist <= region:  # we are inside the pit
+            if distance[i - 1] <= region:  # was in pit before
+                if pit_entry_idx:  # not recorded yet
+                    delta_t = time[i] - time[pit_entry_idx]
+                    if min_time < delta_t.total_seconds():  # check time in pit
+                        if current_split:  # long enough, dump the previous one to output list
+                            current_split.lapLeaveIdx = pit_entry_idx
+                            splits.append(current_split)
+                        current_split = LapSplit(lapId=str(lapId), pitEntryIdx=pit_entry_idx)  # and create new one
+                        lapId += 1
+                        pit_entry_idx = None
+            else:  # entered the pit (left lap)
+                pit_entry_idx = i  # remember entry, start measuring time
+        else:  # outside of pit (on lap)
+            if distance[i - 1] > region:  # was on lap before
+                if lap_entry_idx:  # not recorded yet
+                    delta_t = time[i] - time[lap_entry_idx]
+                    if min_time < delta_t.total_seconds():  # check time in pit
+                        if current_split:  # long enough, record switch to lap
+                            current_split.pitLeaveIdx = lap_entry_idx
+                            current_split.lapEntryIdx = lap_entry_idx
+                        pit_entry_idx = None
+            else:  # entered the lap (left pit)
+                lap_entry_idx = i  # remember exit, start measuring time
+
+    if current_split and current_split.lapEntryIdx:  # do not include the one having just pit time
+        splits.append(current_split)
+
+    # # old
+    # laps = []
+    # for i, idx in enumerate(enter_point):
+    #     try:
+    #         laps.append({"id": str(i + 1), "from": idx, "to": enter_point[i + 1]})
+    #     except IndexError:
+    #         laps.append({"id": str(i + 1), "from": idx, "to": len(points) - 1})
+    # agg_laps = aggregate_laps(configuration, laps)
+    # segment_laps = get_segment_laps(configuration, segment, agg_laps)
+    agg_splits = aggregate_splits(configuration, splits)
+
+    # new
+    return extract_lap_statuses(configuration, agg_splits, segment)
 
 
-def aggregate_laps(configuration: Configuration, laps):
+def aggregate_splits(configuration: Configuration, splits: List[LapSplit]) -> List[LapSplit]:
     agg_start = configuration.mergeFromLap
     agg_count = configuration.lapsMerged
 
-    if agg_count <= 1 or len(laps) <= agg_start:
-        return laps
+    if agg_count <= 1 or len(splits) <= agg_start:
+        return splits
 
-    agg_laps = []
+    agg_splits = []
 
     # copy the ones before start (1, 2, 3, ... agg_start - 1)
     for i in range(agg_start - 1):
-        agg_laps.append(laps[i])
+        agg_splits.append(splits[i])
 
-    group_count = (len(laps) - agg_start + 1) // agg_count
+    group_count = (len(splits) - agg_start + 1) // agg_count
     for i in range(group_count):
-        first = laps[agg_start - 1 + i * agg_count]
-        last = laps[agg_start - 1 + (i + 1) * agg_count - 1]
-        lap = {
-            "id": "" + first["id"] + "-" + last["id"],
-            "from": first["from"],
-            "to": last["to"],
-        }
-        agg_laps.append(lap)
+        first = splits[agg_start - 1 + i * agg_count]
+        last = splits[agg_start - 1 + (i + 1) * agg_count - 1]
+        split = LapSplit(
+            lapId=first.lapId + "-" + last.lapId,
+            pitEntryIdx=first.pitEntryIdx,
+            pitLeaveIdx=first.pitLeaveIdx,
+            lapEntryIdx=first.lapEntryIdx,
+            lapLeaveIdx=last.lapLeaveIdx
+        )
+        agg_splits.append(split)
 
-    for i in range(agg_start + agg_count * group_count - 1, len(laps)):
-        agg_laps.append(laps[i])
-    return agg_laps
+    for i in range(agg_start + agg_count * group_count - 1, len(splits)):
+        agg_splits.append(splits[i])
+    return agg_splits
 
 
-def extract_lap_info(configuration: Configuration, lap_id, lap_data) -> LapStatus:
+def extract_lap_statuses(configuration: Configuration, splits: List[LapSplit], segment: List) -> List[LapStatus]:
+    out = []
+    for split in splits:
+        out.append(extract_lap_status(configuration, split, segment))
+    return out
+
+
+def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -> LapStatus:
     """ Lap data from database:
     xx id |
     xx date           |
@@ -138,10 +196,23 @@ def extract_lap_info(configuration: Configuration, lap_id, lap_data) -> LapStatu
     xx est_battery_range_km |
     xx rated_battery_range_km
     """
+
+    lap_start = split.lapEntryIdx
+    lap_stop = split.lapLeaveIdx + 1 if split.lapLeaveIdx else len(segment) - 1
+    lap_data = segment[lap_start:lap_stop]
+
+    pit_start = split.pitEntryIdx
+    pit_stop = split.pitLeaveIdx + 1 if split.pitLeaveIdx else len(segment) - 1
+    pit_data = segment[pit_start:pit_stop]
+
+
     return LapStatus(
-        id=lap_id,
+        id=split.lapId,
         startTime=pendulum.instance(lap_data[0].date, 'utc'),
         endTime=pendulum.instance(lap_data[-1].date, 'utc'),
+
+        startTimePit=pendulum.instance(pit_data[0].date, 'utc'),
+        endTimePit=pendulum.instance(pit_data[-1].date, 'utc'),
 
         startOdo=lap_data[0].odometer,
         endOdo=lap_data[-1].odometer,
@@ -164,17 +235,3 @@ def extract_lap_info(configuration: Configuration, lap_id, lap_data) -> LapStatu
         consumptionRated=configuration.consumptionRated,
         finished=True  # TODO not true
     )
-
-
-def get_segment_laps(configuration: Configuration, segment, laps) -> List[LapStatus]:
-    """Extract the segment laps.  """
-    segment_laps = []
-    for i, lap in enumerate(laps):
-        lap_id = lap["id"]
-        start = lap["from"]
-        stop = lap["to"] + 1
-        lap_data = segment[start:stop]
-        new_lap = extract_lap_info(configuration, lap_id, lap_data)
-        segment_laps.append(new_lap)
-    return segment_laps
-

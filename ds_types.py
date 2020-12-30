@@ -20,6 +20,7 @@ class Configuration(BaseModel):
     fioRefreshSeconds: int
     defaultMapZoom: int
     previousLaps: int
+    minTimeLap: int
 
 
 class CarStatus(BaseModel):
@@ -64,6 +65,8 @@ class LapStatus(BaseModel):
     id: str  # string because of aggregating
     startTime: pendulum.DateTime
     endTime: Optional[pendulum.DateTime]
+    startTimePit: Optional[pendulum.DateTime]
+    endTimePit: Optional[pendulum.DateTime]
     startOdo: float
     endOdo: Optional[float]
     insideTemp: Optional[float]
@@ -88,6 +91,7 @@ class LapStatus(BaseModel):
 
     consumptionRated: float
     finished: bool
+    driver_name: Optional[str]
 
     # calculated fields
     duration: Optional[pendulum.Duration]
@@ -95,6 +99,13 @@ class LapStatus(BaseModel):
     @validator('duration', always=True)
     def set_duration(cls, v, values) -> pendulum.Duration:
         return values['endTime'] - values['startTime']
+
+    # calculated fields
+    pitDuration: Optional[pendulum.Duration]
+
+    @validator('pitDuration', always=True)
+    def set_pit_uration(cls, v, values) -> pendulum.Duration:
+        return values['endTimePit'] - values['startTimePit'] if values['endTimePit'] and values['startTimePit'] else 0
 
     distance: Optional[float]
 
@@ -108,15 +119,40 @@ class LapStatus(BaseModel):
     def set_avg_speed(cls, v, values) -> float:
         return values['distance'] / values['duration'].seconds * 3600
 
+    startEnergy: Optional[float]
+
+    @validator('startEnergy', always=True)
+    def set_start_energy(cls, v, values) -> float:
+        return values['consumptionRated'] / 100 * float(values['startRangeRated'])
+
+    endEnergy: Optional[float]
+
+    @validator('endEnergy', always=True)
+    def set_end_energy(cls, v, values) -> float:
+        return values['consumptionRated'] / 100 * float(values['endRangeRated'])
+
     energy: Optional[float]
 
     @validator('energy', always=True)
     def set_energy(cls, v, values) -> float:
-        return values['consumptionRated'] / 100 * float(values['startRangeRated'] - values['endRangeRated'])
+        return values['startEnergy'] - values['endEnergy']
 
 
 class LapsResponse(BaseModel):
     total: Optional[LapStatus]
     previous: List[LapStatus]
     recent: Optional[LapStatus]
+
+
+class LapSplit(BaseModel):
+    lapId: str
+    pitEntryIdx: Optional[int]
+    pitLeaveIdx: Optional[int]
+    lapEntryIdx: Optional[int]
+    lapLeaveIdx: Optional[int]
+
+
+class DriverChange(BaseModel):
+    name: str
+    dateFrom: Optional[datetime]
 

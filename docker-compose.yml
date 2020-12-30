@@ -1,0 +1,17 @@
+# this file is just for test purposes
+version: '3'
+services:
+  datasource:
+    image: 286a1edf9685
+    restart: always
+    ports:
+    - 5000:5000
+    environment:
+      - TM_DB_USER=teslamate
+      - TM_DB_PASS=secret
+      - TM_DB_NAME=teslamate
+      - TM_DB_HOST=172.17.0.1
+      - POST_CONFIG_TOKEN="posttoken"
+      - FIO_API_TOKEN=fiotoken
+    volumes:
+      - ./config.json:/etc/tesla-data-source/config.json:ro

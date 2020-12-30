@@ -1,16 +1,22 @@
 from flask import Flask, request, render_template, Response, abort
 
 import os
+import sys
+import logging
 
 import fio_api
 import teslamate_car_data
 import lap_analyzer
-from ds_types import Configuration
+from ds_types import Configuration, DriverChange
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
 NOT_ENABLED_JSON = str({"enabled": "false"})
-app = Flask(__name__)
+app = Flask("app")
+
+handler = logging.StreamHandler(sys.stdout)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
 
 
 def _read_config_file() -> Configuration:
@@ -20,15 +26,23 @@ def _read_config_file() -> Configuration:
         "config.json"
     ]
     for config_file_location in config_file_locations:
-        print(f"Trying to read config from {config_file_location}")
+        app.logger.info(f"Trying to read config from {config_file_location}")
         try:
             c = Configuration.parse_file(config_file_location)
             if c:
-                print(f"Config found and parsed: {config_file_location}")
+                app.logger.info(f"Config found and parsed: {config_file_location}")
                 return c
         except FileNotFoundError:
             pass
     raise FileNotFoundError(f" no config file in any of {config_file_locations}")
+
+
+def _verify_post_token():
+    expected_token = os.environ.get("POST_CONFIG_TOKEN", "secret_value")
+    actual_token = request.args.get('_token', default="", type=str)
+    if expected_token != actual_token:
+        app.logger.error(f"token mismatch, got: {actual_token}")
+        abort(403)
 
 
 def get_configuration():
@@ -77,18 +91,35 @@ def get_fio_balance_json():
 def configuration():
     global _configuration
     if request.method == 'POST':
-        expected_token = os.environ.get("POST_CONFIG_TOKEN", "secret_value")
-        actual_token = request.args.get('_token', default="", type=str)
-        if expected_token != actual_token:
-            abort(403)
+        app.logger.warning("trying to post config")
+        _verify_post_token()  # abort inside
         try:
             j = request.get_json()
-            _configuration = Configuration(**j)
+            orig = _configuration.dict()
+            orig.update(j)
+            _configuration = Configuration(**orig)
         except Exception as ex:
-            print(f"Unable to parse configuration", ex)
+            app.logger.error(f"Unable to parse configuration", ex)
             abort(400, ex)
 
     return Response(_configuration.json(), mimetype='application.json')
+
+
+@app.route('/driver_change', methods=['GET', 'POST'])
+def driver_change():
+    global _configuration
+    if request.method == 'POST':
+        _verify_post_token()  # abort inside
+        try:
+            j = request.get_json()
+            driver_change = DriverChange(**j)
+            teslamate_car_data.apply_driver_change(driver_change)
+
+        except Exception as ex:
+            app.logger.error(f"Unable to parse driver change", ex)
+            abort(400, ex)
+
+    return Response({}, mimetype='application.json')
 
 
 # ########### web endpoints ############
@@ -135,7 +166,7 @@ def get_tm_car_data():
 _configuration = _read_config_file()
 
 # ################### scheduler stuff #########################
-print("starting background jobs")
+app.logger.info("starting background jobs")
 scheduler = BackgroundScheduler()
 teslamate_car_data.register_jobs(scheduler, get_configuration)
 fio_api.register_jobs(scheduler, get_configuration)

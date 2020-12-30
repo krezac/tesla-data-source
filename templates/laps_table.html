@@ -5,11 +5,14 @@
 <table border="1">
 <TR>
    <TH>id</th>
-   <TH>start</th>
-   <TH>end</th>
+   <TH>pit start</th>
+   <TH>pit end</th>
+   <TH>lap start</th>
+   <TH>lap end</th>
    <TH>odo[km]</th>
    <TH>soc[%]</th>
    <TH>rng_rated[km]</th>
+   <TH>pit[min]</th>
    <TH>time[min]</th>
    <TH>dist[km]</th>
    <TH>d_rng_rated[km]</th>
@@ -18,14 +21,18 @@
    <TH>energy/hour[kW]</th>
    <TH>energy_left[kW]</th>
    <TH>t_out[C]</th>
+    <TH>driver</th>
 </TR>
 <TR>
    <TD>{{items.total.id}}</TD>
+   <TD>{{items.total.startTimePit}}</TD>
+   <TD>{{items.total.endTimePit}}</TD>
    <TD>{{items.total.startTime}}</TD>
    <TD>{{items.total.endTime}}</TD>
    <TD>{{'%.2f' % items.total.endOdo}}</TD>
    <TD>{{'%.2f' % items.total.endSOC}}</TD>
    <TD>{{'%.2f' % items.total.endRangeRated}}</TD>
+   <TD>{{items.total.pitDuration.in_minutes()}}</TD>
    <TD>{{items.total.duration.in_minutes()}}</TD>
    <TD>{{'%.2f' % items.total.distance}}</TD>
    <TD>{{'%.2f' % (items.total.startRangeRated - items.total.endRangeRated)}}</TD>
@@ -34,6 +41,7 @@
    <TD>{{'%.2f' % (items.total.energy / items.total.duration.in_seconds() * 3600)}}</TD>
    <TD>{{'%.2f' % (items.total.consumptionRated / 100 * items.total.endRangeRated)}}</TD>
    <TD>{{'%.2f' % items.total.outsideTemp if items.total.outsideTemp != None else "---" }}</TD>
+    <TD>{{items.total.driver_name}}</TD>
 </TR>
 </table>
 
@@ -43,11 +51,14 @@
 <table border="1">
 <TR>
    <TH>id</th>
-   <TH>start</th>
-   <TH>end</th>
+   <TH>pit start</th>
+   <TH>pit end</th>
+   <TH>lap start</th>
+   <TH>lap end</th>
    <TH>odo[km]</th>
    <TH>soc[%]</th>
    <TH>rng_rated[km]</th>
+   <TH>pit[min]</th>
    <TH>time[min]</th>
    <TH>dist[km]</th>
    <TH>d_rng_rated[km]</th>
@@ -56,15 +67,19 @@
    <TH>energy/hour[kW]</th>
    <TH>energy_left[kW]</th>
    <TH>t_out[C]</th>
+    <TH>driver</th>
 </TR>
 <TR>
    <TD>{{items.recent.id}}</TD>
+   <TD>{{items.recent.startTimePit}}</TD>
+   <TD>{{items.recent.endTimePit}}</TD>
    <TD>{{items.recent.startTime}}</TD>
    <TD>{{items.recent.endTime}}</TD>
    <TD>{{'%.2f' % items.recent.endOdo}}</TD>
    <TD>{{'%.2f' % items.recent.endSOC}}</TD>
    <TD>{{'%.2f' % items.recent.endRangeRated}}</TD>
-   <TD>{{items.recent.duration.in_minutes()}}</TD>
+   <TD>{{items.recent.pitDuration.in_minutes()}}</TD>
+    <TD>{{items.recent.duration.in_minutes()}}</TD>
    <TD>{{'%.2f' % items.recent.distance}}</TD>
    <TD>{{'%.2f' % (items.recent.startRangeRated - items.recent.endRangeRated)}}</TD>
    <TD>{{'%.2f' % items.recent.avgSpeed}}</TD>
@@ -72,6 +87,7 @@
    <TD>{{'%.2f' % (items.recent.energy / items.recent.duration.in_seconds() * 3600)}}</TD>
    <TD>{{'%.2f' % (items.recent.consumptionRated / 100 * items.recent.endRangeRated)}}</TD>
    <TD>{{'%.2f' % items.recent.outsideTemp if items.recent.outsideTemp != None else "---" }}</TD>
+    <TD>{{items.recent.driver_name}}</TD>
 </TR>
 </table>
 
@@ -81,11 +97,14 @@
 <table border="1">
 <TR>
    <TH>id</th>
-   <TH>start</th>
-   <TH>end</th>
+   <TH>pit start</th>
+   <TH>pit end</th>
+   <TH>lap start</th>
+   <TH>lap end</th>
    <TH>odo[km]</th>
    <TH>soc[%]</th>
    <TH>rng_rated[km]</th>
+   <TH>pit[min]</th>
    <TH>time[min]</th>
    <TH>dist[km]</th>
    <TH>d_rng_rated[km]</th>
@@ -94,16 +113,20 @@
    <TH>energy/hour[kW]</th>
    <TH>energy_left[kW]</th>
    <TH>t_out[C]</th>
+    <TH>driver</th>
 </TR>
 {% for item in items.previous %}
 <TR>
    <TD>{{item.id}}</TD>
+   <TD>{{item.startTimePit}}</TD>
+   <TD>{{item.endTimePit}}</TD>
    <TD>{{item.startTime}}</TD>
    <TD>{{item.endTime}}</TD>
    <TD>{{'%.2f' % item.endOdo}}</TD>
    <TD>{{'%.2f' % item.endSOC}}</TD>
    <TD>{{'%.2f' % item.endRangeRated}}</TD>
-   <TD>{{item.duration.in_minutes()}}</TD>
+   <TD>{{item.pitDuration.in_minutes()}}</TD>
+    <TD>{{item.duration.in_minutes()}}</TD>
    <TD>{{'%.2f' % item.distance}}</TD>
    <TD>{{'%.2f' % (item.startRangeRated - item.endRangeRated)}}</TD>
    <TD>{{'%.2f' % item.avgSpeed}}</TD>
@@ -111,6 +134,7 @@
    <TD>{{'%.2f' % (item.energy / item.duration.in_seconds() * 3600)}}</TD>
    <TD>{{'%.2f' % (item.consumptionRated / 100 * item.endRangeRated)}}</TD>
    <TD>{{'%.2f' % item.outsideTemp if item.outsideTemp != None else "---"}}</TD>
+   <TD>{{item.driver_name}}</TD>
 </TR>
 {% endfor %}
 </table>

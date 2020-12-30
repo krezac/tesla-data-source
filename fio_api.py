@@ -2,14 +2,18 @@ from typing import Callable
 import requests
 import pendulum
 import os
+import logging
 
 from ds_types import Configuration, Balance
 
 _balance_info: Balance = None
 _get_configuration_func = None
 
+logger = logging.getLogger('app.fio_api')
+
+
 def update_balance():
-    print("updating balance")
+    logger.debug("updating balance")
     global _balance_info
     global _get_configuration_func
 
@@ -19,15 +23,16 @@ def update_balance():
         data = requests.get(f"https://www.fio.cz/ib_api/rest/periods/{token}/{today}/{today}/transactions.json")
         if data and data.status_code == 200:
             json_data = data.json()
-            print(json_data)
 
             _balance_info = Balance(amount=json_data["accountStatement"]["info"]["closingBalance"],
                                     currency=json_data["accountStatement"]["info"]["currency"])
         else:
+            logger.error(f"Weird FIO response data: {data}")
             _balance_info = Balance(amount=0.0, currency='???')
     else:
+        logger.debug("No token")
         _balance_info = Balance(amount=0.0, currency='???')
-    print("updating balance done")
+    logger.debug("updating balance done")
 
 
 def get_balance_info() -> Balance:

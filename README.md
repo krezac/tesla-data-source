@@ -2,6 +2,41 @@
 Present data from Tesla API scrapers like Teslamate or Tesla Logger (TODO) to web. Lap analyzer...
 
 ## Instalation
+
+### SQL
+You need to execute the sql/ds_driver_changes.sql script first to create
+driver change table. Without that, it won't work properly. Always refer the file 
+for most recent version of the script.
+
+```sql
+CREATE TABLE IF NOT EXISTS ds_driver_changes
+(
+	id serial not null,
+	date_from timestamp without time zone not null,
+	date_to timestamp without time zone null,
+	name varchar(255)
+);
+
+alter table ds_driver_changes owner to teslamate;
+
+CREATE SEQUENCE IF NOT EXISTS ds_driver_changes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE ds_driver_changes_id_seq OWNER TO teslamate;
+
+ALTER SEQUENCE ds_driver_changes_id_seq OWNED BY ds_driver_changes.id;
+
+ALTER TABLE ONLY ds_driver_changes ALTER COLUMN id SET DEFAULT nextval('ds_driver_changes_id_seq'::regclass);
+
+ALTER TABLE ONLY ds_driver_changes
+    ADD CONSTRAINT ds_driver_changes_pkey PRIMARY KEY (id);
+```
+
+### Docker-compose
 Add it as new service to your Teslamate docker-compose.yml
 ```yaml
   datasource:
@@ -36,12 +71,12 @@ Update the networks according to the other components (get inspired by **teslama
 You can ignore the labels if not using Traefik.
 
 ### Environmental variables meaning
-* TM_DB_USER=${TM_DB_USER}
-* TM_DB_PASS=${TM_DB_PASS}
-* TM_DB_NAME=${TM_DB_NAME}
-* TM_DB_HOST=database
-* POST_CONFIG_TOKEN="abcdefgh"
-* FIO_API_TOKEN="abcdefgh"
+* TM_DB_USER: database user
+* TM_DB_PASS: database password
+* TM_DB_NAME: database name
+* TM_DB_HOST: database host (server name)
+* POST_CONFIG_TOKEN: token fro POST operations
+* FIO_API_TOKEN: token for loading FIO account balance
 
 ## Config file
 If in doubt about the doc being up to date, take the sample config from source code.
@@ -62,7 +97,8 @@ The same structure is used to POST to update the config
   "lapsRefreshSeconds": 10,
   "fioRefreshSeconds": 900,
   "defaultMapZoom": 16,
-  "previousLaps": 10
+  "previousLaps": 10,
+  "minTimeLap": 10
 }
 ```
 
@@ -82,6 +118,7 @@ The same structure is used to POST to update the config
 * fioRefreshSeconds: how often bank account balance is refreshed from bank API [900]
 * defaultMapZoom: zoom level at page load. The higher, the closer (max 19) [16]
 * previousLaps: number of previous laps to be displayed [10]
+* minTimeLap: minimum number of seconds in pit or on lap to count it [10] 
 
 ## JSON Endpoints
 
@@ -122,6 +159,24 @@ Gets the current configuration. See above for example
 ### POST /configuration?_token=???
 Updates the current configuration. See above for example, how the payload looks like.
 The token is configured via env variable (see above).
+
+### POST /driver_change?_token=???
+Insert new driver change. It invalidates the existing one. 
+You can optionally specify the time but keep in mind it doesn't alter history (date_to) of existing records
+The token is configured via env variable (see above).
+
+```json
+{
+    "name": "John Doe"
+}
+```
+
+```json
+{
+    "name": "John Doe",
+    "dateFrom": "2020-12-28T11:32:17"
+}
+```
 
 ## Web endpoints
 
