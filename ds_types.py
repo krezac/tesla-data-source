@@ -51,6 +51,7 @@ class CarStatus(BaseModel):
     rated_battery_range_km: Optional[float]
     usable_battery_level: Optional[int]
     name: str
+    driver_name: Optional[str]
 
 
 class Balance(BaseModel):

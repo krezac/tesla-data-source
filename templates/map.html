@@ -33,6 +33,9 @@
 
     function getStatusText(car_status) {
         statusText = `<b>${car_status.name}</b><br/><br/>`;
+        if (car_status.driver_name) {
+            statusText += getStatusTextItem("Driver", car_status.driver_name, "---", "");
+        }
         statusText += getStatusTextItem("Odo", Math.round(car_status.odometer), "---", "km");
         statusText += getStatusTextItem("Speed", Math.round(car_status.speed), "0", "km/h");
         statusText += getStatusTextItem("Elevation", car_status.elevation, "---", "m");

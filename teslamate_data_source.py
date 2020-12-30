@@ -47,7 +47,7 @@ class TeslamateDataSource:
         out_data = {}
         column_names = [i[0] for i in cursor.description]
         row = cursor.fetchone()
-        return dict(zip(column_names, row))
+        return dict(zip(column_names, row)) if row else None
 
     def get_car_status(self, configuration: Configuration) -> CarStatus:
         """
@@ -75,13 +75,25 @@ class TeslamateDataSource:
                 out_data.update(out_data_2)  # just add the extra fields
                 pos_cursor_2.close()
 
-                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
+                # get driver
+                driver_cursor = ps_connection.cursor()
+                driver_cursor.execute(
+                    "select * from ds_driver_changes where date_from <= %s::timestamptz and (date_to >= %s::timestamptz or date_to is null) order by date_from desc limit 1",
+                    (out_data['date'], out_data['date']))
+                d = self._cursor_one_to_dict(driver_cursor)
+                if d:
+                    out_data["driver_name"] = d["name"]
+                driver_cursor.close()
                 status = CarStatus(**out_data)
             else:
                 raise Exception("no connection from pool")
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error while connecting to PostgreSQL", error)
+        finally:
+            if ps_connection:
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
+
         return status
 
     def get_car_positions(self, configuration: Configuration):
@@ -103,14 +115,14 @@ class TeslamateDataSource:
                     out_data.append(row)
                     row = pos_cursor.fetchone()
                 pos_cursor.close()
-
-                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
-
             else:
                 raise Exception("no connection from pool")
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error while connecting to PostgreSQL", error)
+        finally:
+            if ps_connection:
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
         return out_data
 
     def apply_driver_change(self, driver_change: DriverChange):
@@ -129,12 +141,14 @@ class TeslamateDataSource:
                 # logger.debug(cursor.query)
                 ps_connection.commit()
                 cursor.close()
-                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
             else:
                 raise Exception("no connection from pool")
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error while connecting to PostgreSQL", error)
+        finally:
+            if ps_connection:
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
 
 
     def get_driver_changes(self, dates: List[datetime.datetime]) -> Dict[datetime.datetime, DriverChange]:
@@ -149,15 +163,17 @@ class TeslamateDataSource:
                                        (d, d))
                     # logger.debug(cursor.query)
                     out_data = self._cursor_one_to_dict(cursor)
-                    out[d] = DriverChange(**out_data)
+                    if out_data:
+                        out[d] = DriverChange(**out_data)
                 cursor.close()
-                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
-
             else:
                 raise Exception("no connection from pool")
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error while connecting to PostgreSQL", error)
+        finally:
+            if ps_connection:
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
         return out
 
 #def register_job(scheduler):

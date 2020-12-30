@@ -37,10 +37,11 @@ def _update_car_laps():
 
     # load driver names
     dates = [l.startTime for l in _car_laps_list]
-    driver_map = _data_source.get_driver_changes(dates)
-    for l in _car_laps_list:
-        if l.startTime in driver_map:
-            l.driver_name = driver_map[l.startTime].name
+    if dates:
+        driver_map = _data_source.get_driver_changes(dates)
+        for l in _car_laps_list:
+            if l.startTime in driver_map:
+                l.driver_name = driver_map[l.startTime].name
 
     prev_list = _car_laps_list[-configuration.previousLaps - 1:-1] if len(_car_laps_list) > 0 else []
     prev_list.reverse()  # to have newest on top
