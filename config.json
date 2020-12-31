@@ -34,6 +34,28 @@
       "default": "---"
     },
     {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km",
+      "default": "---"
+    },
+    {
+      "field": "lap",
+      "label": "Lap",
+      "unit": "",
+      "default": "---"
+    },
+    {
+      "field": "lap_distance",
+      "label": "Lap distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km",
+      "default": "---"
+    },
+    {
       "field": "start_time",
       "label": "Start time",
       "format_function": "format_datetime_fn",
@@ -50,21 +72,6 @@
       "default": "---"
     },
     {
-      "field": "distance",
-      "label": "Distance",
-      "format_function": "format_float_fn",
-      "format": "%.2f",
-      "unit": "km",
-      "default": "---"
-    },
-    {
-      "field": "time_since_start",
-      "label": "Time since start",
-      "format_function": "format_period_words_fn",
-      "unit": "",
-      "default": "---"
-    },
-    {
       "field": "time_since_start",
       "label": "Time since start",
       "format_function": "format_period_fn",
@@ -76,6 +83,64 @@
       "label": "Time to end",
       "format_function": "format_period_fn",
       "unit": "",
+      "default": "---"
+    }
+  ],
+  "lapLabels": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    },
+    {
+      "field": "duration",
+      "label": "Time",
+      "format_function": "format_period_fn",
+      "unit": ""
+    },
+    {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km"
+    },
+    {
+      "field": "avgSpeed",
+      "label": "Speed",
+      "format_function": "format_float_fn",
+      "format": "%.0f",
+      "unit": "km/h"
+    },
+    {
+      "field": "energy",
+      "label": "Energy",
+      "format_function": "format_float_fn",
+      "format": "%.0f",
+      "unit": "kW"
+    },
+    {
+      "field": "insideTemp",
+      "label": "Temp",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "°C"
+    },
+    {
+      "field": "driver_name",
+      "label": "Driver",
+      "default": "---"
+    }
+  ],
+    "chargingLabels": [
+    {
+      "field": "car_name",
+      "label": "Car",
+      "default": "---"
+    },
+    {
+      "field": "driver_name",
+      "label": "Driver",
       "default": "---"
     }
   ]

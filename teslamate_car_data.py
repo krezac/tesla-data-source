@@ -3,7 +3,8 @@ import pendulum
 import logging
 
 from teslamate_data_source import TeslamateDataSource
-from ds_types import Configuration, LapsResponse, LapStatus, CarStatus, DriverChange
+from ds_types import Configuration, LapStatus, CarStatus, DriverChange, LapsList, JsonLapsResponse, JsonStatusResponse
+from labels import generate_labels
 import lap_analyzer
 from datetime import datetime
 
@@ -11,10 +12,12 @@ logger = logging.getLogger('app.car_data')
 
 _get_configuration_func: Callable[[], Configuration] = None
 _data_source = TeslamateDataSource()
-_car_status = None
-_initial_status = None
-_car_laps_structured: LapsResponse = None
+
+_car_status: CarStatus = None
+_car_status_formatted: JsonStatusResponse = None
+_initial_status: CarStatus = None
 _car_laps_list: List[LapStatus] = None
+_car_laps_formatted: JsonLapsResponse = None
 
 
 def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configuration: Configuration):
@@ -29,10 +32,16 @@ def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configu
     status.time_since_start = pendulum.period(start_time, now, True) if now >= start_time else pendulum.period(now, now, True)
     status.time_to_end = pendulum.period(now, end_time, True) if now <= end_time else pendulum.period(now, now, True)
 
+    if _car_laps_list:
+        current_lap = _car_laps_list[-1]
+        status.lap = current_lap.id
+        status.lap_distance = current_lap.distance
+
 
 def _update_car_status():
     global _initial_status
     global _car_status
+    global _car_status_formatted
     global _data_source
     global _get_configuration_func
 
@@ -46,12 +55,20 @@ def _update_car_status():
     if _car_status and _initial_status:
         logger.debug("updating calculated fields")
         _add_calculated_fields(_car_status, _initial_status, _get_configuration_func())
+
+    # build the formatted form
+    _car_status_formatted = JsonStatusResponse(
+        lat=_car_status.latitude,
+        lon=_car_status.longitude,
+        mapLabels=generate_labels(_get_configuration_func().mapLabels, _car_status.dict()),
+        textLabels=generate_labels(_get_configuration_func().textLabels, _car_status.dict())
+    )
     logger.debug("updating car status done")
 
 
 def _update_car_laps():
     global _car_laps_list
-    global _car_laps_structured
+    global _car_laps_formatted
     global _get_configuration_func
 
     logger.debug("updating car laps")
@@ -67,13 +84,21 @@ def _update_car_laps():
             if l.startTime in driver_map:
                 l.driver_name = driver_map[l.startTime].name
 
-    prev_list = _car_laps_list[-configuration.previousLaps - 1:-1] if len(_car_laps_list) > 0 else []
-    prev_list.reverse()  # to have newest on top
-    _car_laps_structured = LapsResponse(
-        total=_calculate_lap_total(_car_laps_list) if _car_laps_list else None,
-        previous=prev_list,
-        recent=_car_laps_list[-1] if len(_car_laps_list) > 0 else None
+    total_lap = _calculate_lap_total(_car_laps_list) if _car_laps_list else None
+    recent_lap = _car_laps_list[-1] if _car_laps_list else None
+    prev_lap_list = _car_laps_list[-configuration.previousLaps - 1:-1] if len(_car_laps_list) > 0 else []
+    prev_lap_list.reverse()  # to have newest on top
+
+    total_formatted = generate_labels(_get_configuration_func().lapLabels, total_lap.dict())
+    previous_formatted = [generate_labels(_get_configuration_func().lapLabels, lap.dict()) for lap in prev_lap_list]
+    recent_formatted = generate_labels(_get_configuration_func().lapLabels, recent_lap.dict())
+
+    _car_laps_formatted = JsonLapsResponse(
+        total=total_formatted,
+        previous=previous_formatted,
+        recent=recent_formatted
     )
+
     logger.debug("updating car laps done")
 
 
@@ -118,6 +143,7 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
 
     return total_status
 
+
 def get_car_status() -> CarStatus:
     global _car_status
     if not _car_status:
@@ -125,11 +151,25 @@ def get_car_status() -> CarStatus:
     return _car_status
 
 
-def get_car_laps() -> LapsResponse:
-    global _car_laps_structured
-    if not _car_laps_structured:
+def get_car_status_formatted() -> CarStatus:
+    global _car_status_formatted
+    if not _car_status_formatted:
+        _update_car_status()
+    return _car_status_formatted
+
+
+def get_car_laps_list() -> LapsList:
+    global _car_laps_list
+    if not _car_laps_list:
         _update_car_laps()
-    return _car_laps_structured
+    return _car_laps_list
+
+
+def get_car_laps_formatted() -> JsonLapsResponse:
+    global _car_laps_formatted
+    if not _car_laps_formatted:
+        _update_car_laps()
+    return _car_laps_formatted
 
 
 def apply_driver_change(driver_change: DriverChange):

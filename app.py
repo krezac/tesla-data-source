@@ -7,7 +7,7 @@ import logging
 import fio_api
 import teslamate_car_data
 import lap_analyzer
-from ds_types import Configuration, DriverChange, JsonStatusResponse
+from ds_types import Configuration, DriverChange, JsonStatusResponse, LapsList
 from labels import generate_labels
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -67,6 +67,7 @@ def custom_page():
         abort(404)
     return render_template(template)
 
+
 # ########### JSON endpoints (AJAX) ############
 @app.route('/car_status_json_full')
 def get_car_status_json_full():
@@ -89,15 +90,18 @@ def get_car_status_json():
     if not _configuration.enabled:
         return NOT_ENABLED_JSON
 
-    status = teslamate_car_data.get_car_status()
+    out = teslamate_car_data.get_car_status_formatted()
+    return Response(out.json(), mimetype='application.json')
 
-    out = JsonStatusResponse(
-        lat=status.latitude,
-        lon=status.longitude,
-        mapLabels=generate_labels(_configuration.mapLabels, status),
-        textLabels=generate_labels(_configuration.textLabels, status)
+
+@app.route('/car_laps_json_full')
+def get_car_laps_json_full():
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    out = LapsList(
+        __root__=teslamate_car_data.get_car_laps_list()
     )
-
     return Response(out.json(), mimetype='application.json')
 
 
@@ -106,7 +110,7 @@ def get_car_laps_json():
     if not _configuration.enabled:
         return NOT_ENABLED_JSON
 
-    laps = teslamate_car_data.get_car_laps()
+    laps = teslamate_car_data.get_car_laps_formatted()
     return Response(laps.json() if laps else {}, mimetype='application.json')
 
 
@@ -161,6 +165,15 @@ def car_map():
         return render_template('not_enabled.html')
 
     return render_template('map.html', zoom=_configuration.defaultMapZoom)
+
+
+@app.route('/dashboard')
+def dashboard():
+    if not _configuration.enabled:
+        return render_template('not_enabled.html')
+
+    return render_template('dashboard.html', zoom=_configuration.defaultMapZoom, title="Tesla Racing Dashboard",
+                           config=_configuration)
 
 
 @app.route('/fio_balance')

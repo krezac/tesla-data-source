@@ -168,6 +168,25 @@ The same structure is used to POST to update the config
       "unit": "",
       "default": "---"
     }
+  ],
+  "lapLabels": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    },
+    {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km"
+    }
+  ],
+    "chargingLabels": [
+      {
+        "TODO": "TODO"
+      }
   ]
 }
 ```
@@ -191,6 +210,8 @@ The same structure is used to POST to update the config
 * minTimeLap: minimum number of seconds in pit or on lap to count it [10]
 * mapLabels: labels displayed in the bubble on map
 * textLabels: labels displayed next to the map
+* lapLabels: labels used to display lap details
+* chargingLabels: labels used to display charging details
 
 ## Label formatting
 ```json
@@ -203,7 +224,7 @@ The same structure is used to POST to update the config
   "default": "---"
 }
 ```
-* field: any field available in CarStatus class
+* field: any field available in data dictionary (see CarStatus, LapStatus... for available fields)
 * label: displayed label
 * format_function: formatting functions from labels.py (if not provided, output is just str())
 * format: format string (used by the function) if needed

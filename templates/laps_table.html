@@ -2,6 +2,7 @@
 
 <h2>Total</h2>
 
+{% if items.total %}
 <table border="1">
 <TR>
    <TH>id</th>
@@ -44,10 +45,13 @@
     <TD>{{items.total.driver_name}}</TD>
 </TR>
 </table>
-
+{% else %}
+    No data available
+{% endif %}
 
 <h2>Recent lap</h2>
 
+{% if items.recent %}
 <table border="1">
 <TR>
    <TH>id</th>
@@ -90,10 +94,13 @@
     <TD>{{items.recent.driver_name}}</TD>
 </TR>
 </table>
-
+{% else %}
+    No data available
+{% endif %}
 
 <h2>Previous</h2>
 
+{% if items.previous %}
 <table border="1">
 <TR>
    <TH>id</th>
@@ -138,4 +145,7 @@
 </TR>
 {% endfor %}
 </table>
+{% else %}
+    No data available
+{% endif %}
 </body></html>

@@ -32,6 +32,8 @@ class Configuration(BaseModel):
     minTimeLap: int
     mapLabels: List[LabelConfigItem]
     textLabels: List[LabelConfigItem]
+    lapLabels: List[LabelConfigItem]
+    chargingLabels: List[LabelConfigItem]
 
 
 class CarStatus(BaseModel):
@@ -64,9 +66,11 @@ class CarStatus(BaseModel):
     car_name: str
     driver_name: Optional[str]
 
-    # calculated fields (diff from initial status
+    # calculated fields (diff from initial status). The ALL NEED to be optional (as they are filled later).
     start_odometer: Optional[float]
     distance: Optional[float]
+    lap: Optional[str]
+    lap_distance: Optional[float]
     start_time: Optional[pendulum.DateTime]
     end_time: Optional[pendulum.DateTime]
     time_since_start: Optional[pendulum.Duration]
@@ -158,10 +162,8 @@ class LapStatus(BaseModel):
         return values['startEnergy'] - values['endEnergy']
 
 
-class LapsResponse(BaseModel):
-    total: Optional[LapStatus]
-    previous: List[LapStatus]
-    recent: Optional[LapStatus]
+class LapsList(BaseModel):
+    __root__: List[LapStatus]
 
 
 class LapSplit(BaseModel):
@@ -177,13 +179,19 @@ class DriverChange(BaseModel):
     dateFrom: Optional[datetime]
 
 
-class JsonStatusResponseItem(BaseModel):
+class LabelItem(BaseModel):
     label: str
     value: Optional[str]
+
+
+class JsonLapsResponse(BaseModel):
+    total: List[LabelItem]
+    previous: List[List[LabelItem]]
+    recent: List[LabelItem]
 
 
 class JsonStatusResponse(BaseModel):
     lat: float
     lon: float
-    mapLabels: List[JsonStatusResponseItem]
-    textLabels: List[JsonStatusResponseItem]
+    mapLabels: List[LabelItem]
+    textLabels: List[LabelItem]

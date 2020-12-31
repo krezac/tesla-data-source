@@ -38,6 +38,9 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
         The starting point for the first lap.
 
     """
+    if not segment:  # race not started yet
+        return []
+
     points = [(pt.latitude, pt.longitude) for pt in segment]
     start = (configuration.startLatitude, configuration.startLongitude) \
         if configuration.startLatitude is not None and configuration.startLongitude \

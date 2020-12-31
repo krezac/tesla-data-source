@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Dict
 import pendulum
 import logging
 
-from ds_types import LabelConfigItem, CarStatus, JsonStatusResponseItem
+from ds_types import LabelConfigItem, CarStatus, LabelItem, LapStatus
 
 logger = logging.getLogger('app.car_data')
 
@@ -12,7 +12,10 @@ def format_float_fn(raw_value: float, format_str: str) -> str:
 
 
 def format_period_fn(raw_value: pendulum.Period, _format_str: str) -> str:
-    return f"{raw_value.days} days, {raw_value.hours:02d}:{raw_value.minutes:02d}:{raw_value.remaining_seconds:02d}"
+    if raw_value.days:
+        return f"{raw_value.days} days, {raw_value.hours:02d}:{raw_value.minutes:02d}:{raw_value.remaining_seconds:02d}"
+    else:
+        return f"{raw_value.hours:02d}:{raw_value.minutes:02d}:{raw_value.remaining_seconds:02d}"
 
 
 def format_period_words_fn(raw_value: pendulum.Period, _format_str: str) -> str:
@@ -30,24 +33,25 @@ def _format_value(raw_value, config_item: LabelConfigItem):
     if config_item.format_function:
         format_fn = globals()[config_item.format_function]
         if format_fn:
-            return format_fn(raw_value, config_item.format)
+            return format_fn(raw_value, config_item.format) + config_item.unit
 
-    return f"{raw_value}{config_item.unit}"
+    return f"{raw_value}{config_item.unit if config_item.unit else ''}"
 
-def _generate_label(config_item: LabelConfigItem, car_status: CarStatus) -> JsonStatusResponseItem:
-    car_status_dict = car_status.dict()
-    if config_item.field not in car_status_dict:
-        logger.error(f"field {config_item} does not exist in car status. Misconfiguration, please fix")
-        return JsonStatusResponseItem(label=config_item.label, value=config_item.default)  # misconfiguration
-    raw_value = car_status_dict[config_item.field]
+
+def _generate_label(config_item: LabelConfigItem, data_dict: Dict) -> LabelItem:
+    if config_item.field not in data_dict:
+        logger.error(f"field {config_item.field} does not exist in data_dict ({data_dict}). Misconfiguration, please fix")
+        return LabelItem(label=config_item.label, value=config_item.default)  # misconfiguration
+    raw_value = data_dict[config_item.field]
     # TODO implement formatting
     value = _format_value(raw_value, config_item)
-    return JsonStatusResponseItem(label=config_item.label, value=value)
+    return LabelItem(label=config_item.label, value=value)
 
 
-def generate_labels(config_items: List[LabelConfigItem], car_status: CarStatus) -> List[JsonStatusResponseItem]:
+def generate_labels(config_items: List[LabelConfigItem], data_dict: Dict) -> List[LabelItem]:
     out = []
     for config_item in config_items:
-        item = _generate_label(config_item, car_status)
+        item = _generate_label(config_item, data_dict)
         out.append(item)
     return out
+
