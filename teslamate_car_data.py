@@ -149,6 +149,10 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
 
     # TODO calculate energy as sum
     energy = 0
+    chargeSocAdded = 0
+    chargeEnergyAdded = 0
+    chargeRangeAdded = 0
+    chargeMinutes = 0
     now = pendulum.now(tz='utc')
     duration = pendulum.Period(now, now)
     pit_duration = pendulum.Period(now, now)
@@ -156,9 +160,17 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
         energy += lap.energy
         duration += lap.duration
         pit_duration += lap.pitDuration
+        chargeSocAdded += lap.chargeSocAdded if lap.chargeSocAdded else 0
+        chargeEnergyAdded += lap.chargeEnergyAdded if lap.chargeEnergyAdded else 0
+        chargeRangeAdded += lap.chargeRangeRatedAdded if lap.chargeRangeRatedAdded else 0
+        chargeMinutes += lap.chargeDurationMin if lap.chargeDurationMin else 0
     total_status.energy = energy
     total_status.duration = duration
     total_status.pitDuration = pit_duration
+    total_status.chargeSocAdded = chargeSocAdded
+    total_status.chargeEnergyAdded = chargeEnergyAdded
+    total_status.chargeRangeRatedAdded = chargeEnergyAdded
+    total_status.chargeDurationMin = chargeMinutes
 
     return total_status
 

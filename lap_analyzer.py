@@ -80,6 +80,7 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
                     lapId=lapId,
                     pitEntryIdx=start_idx,
                 )
+            lapId += 1
             continue
         if dist <= region:  # we are inside the pit
             if distance[i - 1] <= region:  # was in pit before
