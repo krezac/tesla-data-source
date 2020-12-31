@@ -271,6 +271,9 @@ Gets the current configuration. See above for example
 Updates the current configuration. See above for example, how the payload looks like.
 The token is configured via env variable (see above).
 
+### DELETE /configuration?_token=???
+Reloads the configuration file (discards the changes).
+
 ### POST /driver_change?_token=???
 Insert new driver change. It invalidates the existing one. 
 You can optionally specify the time but keep in mind it doesn't alter history (date_to) of existing records

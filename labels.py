@@ -33,7 +33,7 @@ def _format_value(raw_value, config_item: LabelConfigItem):
     if config_item.format_function:
         format_fn = globals()[config_item.format_function]
         if format_fn:
-            return format_fn(raw_value, config_item.format) + config_item.unit
+            return format_fn(raw_value, config_item.format) + (config_item.unit if config_item.unit else '')
 
     return f"{raw_value}{config_item.unit if config_item.unit else ''}"
 

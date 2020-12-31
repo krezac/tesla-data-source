@@ -161,6 +161,25 @@ class LapStatus(BaseModel):
     def set_energy(cls, v, values) -> float:
         return values['startEnergy'] - values['endEnergy']
 
+    chargeEnergyAdded: Optional[float]
+    chargeStartSoc: Optional[float]
+    chargeEndSoc: Optional[float]
+    chargeStartRangeRated: Optional[float]
+    chargeEndRangeRated: Optional[float]
+    chargeDurationMin: Optional[float]
+
+    chargeSocAdded: Optional[float]
+    @validator('chargeSocAdded', always=True)
+    def set_soc_added(cls, v, values) -> float:
+        return values['chargeEndSoc'] - values['chargeStartSoc'] if values['chargeEndSoc'] and values['chargeStartSoc'] else 0
+
+    chargeRangeRatedAdded: Optional[float]
+
+    # TODO this doesn't work for some reason (the one above does). explicit assignement in car_data
+    #@validator('chargeRangeRatedAdded', always=True)
+    #def set_charge_energy_added(cls, v, values) -> float:
+    #    return values['chargeEndRangeRated'] - values['chargeStartRangeRated'] if values['chargeEndRangeRated'] and values['chargeStartRangeRated'] else 0
+
 
 class LapsList(BaseModel):
     __root__: List[LapStatus]
@@ -195,3 +214,18 @@ class JsonStatusResponse(BaseModel):
     lon: float
     mapLabels: List[LabelItem]
     textLabels: List[LabelItem]
+
+
+class ChargingProcess(BaseModel):
+    start_date: datetime
+    end_date: Optional[datetime]
+    charge_energy_added: float
+    start_battery_level: int
+    end_battery_level: int
+    duration_min: int
+    outside_temp_avg: float
+    start_ideal_range_km: float
+    end_ideal_range_km: float
+    start_rated_range_km: float
+    end_rated_range_km: float
+    charge_energy_used: float

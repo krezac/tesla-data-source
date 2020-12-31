@@ -8,7 +8,7 @@ import pendulum
 import logging
 from typing import List, Dict
 
-from ds_types import CarStatus, Configuration, DriverChange
+from ds_types import CarStatus, Configuration, DriverChange, ChargingProcess
 
 logger = logging.getLogger('app.tm_ds')
 
@@ -37,9 +37,10 @@ class TeslamateDataSource:
 
     def _cursor_to_list(self, cursor):
         out_data = []
-        rdef = namedtuple('dataset', ' '.join([x[0] for x in cursor.description]))
-        for row in map(rdef._make, cursor.fetchall()):
-            out_data.append(row)
+        column_names = [i[0] for i in cursor.description]
+        row = cursor.fetchone()
+        while row:
+            out_data.append(dict(zip(column_names, row)))
             row = cursor.fetchone()
         return out_data
 
@@ -60,6 +61,7 @@ class TeslamateDataSource:
             if ps_connection:
                 # get the one containing most of the values
                 pos_cursor_1 = ps_connection.cursor()
+                logger.info(f"getting status for {date}")
                 pos_cursor_1.execute("select car.name as car_name, pos.* from positions pos JOIN cars car on pos.car_id = car.id WHERE car_id = %s::integer AND usable_battery_level IS NOT NULL AND date < %s::timestamptz order by date desc limit 1",
                                    (configuration.carId, date))
                 # logger.debug(pos_cursor_1.query)
@@ -174,6 +176,35 @@ class TeslamateDataSource:
             if ps_connection:
                 TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
         return out
+
+    def get_charging_processes(self, configuration: Configuration) -> List[ChargingProcess]:
+        out_data = []
+        try:
+            ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
+            if ps_connection:
+                pos_cursor = ps_connection.cursor()
+                pos_cursor.execute("SELECT * FROM charging_processes where start_date >= %s::timestamptz AND start_date <= (%s::timestamptz + '%s hour'::interval) AND car_id = %s::integer",
+                            (configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
+                             configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
+                             configuration.hours,
+                             configuration.carId))
+                # logger.debug(pos_cursor.query)
+                logger.debug(f"The number of chargings: {pos_cursor.rowcount}")
+
+                row = self._cursor_to_list(pos_cursor)
+                for item in row:
+                    charging_process = ChargingProcess(**item)
+                    out_data.append(charging_process)
+                pos_cursor.close()
+            else:
+                raise Exception("no connection from pool")
+
+        except (Exception, psycopg2.DatabaseError) as error:
+            logger.error("Error while connecting to PostgreSQL", error)
+        finally:
+            if ps_connection:
+                TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
+        return out_data
 
 #def register_job(scheduler):
 #    scheduler.add_job(update_car_data, 'interval', seconds=10)

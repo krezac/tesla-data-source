@@ -6,7 +6,7 @@ from teslamate_data_source import TeslamateDataSource
 from ds_types import Configuration, LapStatus, CarStatus, DriverChange, LapsList, JsonLapsResponse, JsonStatusResponse
 from labels import generate_labels
 import lap_analyzer
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger('app.car_data')
 
@@ -18,6 +18,7 @@ _car_status_formatted: JsonStatusResponse = None
 _initial_status: CarStatus = None
 _car_laps_list: List[LapStatus] = None
 _car_laps_formatted: JsonLapsResponse = None
+_car_charging_processes = None
 
 
 def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configuration: Configuration):
@@ -70,11 +71,13 @@ def _update_car_laps():
     global _car_laps_list
     global _car_laps_formatted
     global _get_configuration_func
+    global _car_charging_processes
 
     logger.debug("updating car laps")
     configuration = _get_configuration_func()
     positions = _data_source.get_car_positions(configuration)
     _car_laps_list = lap_analyzer.find_laps(configuration, positions, configuration.startRadius, 0, 0)
+    _car_charging_processes = _data_source.get_charging_processes(configuration)
 
     # load driver names
     dates = [l.startTime for l in _car_laps_list]
@@ -83,6 +86,22 @@ def _update_car_laps():
         for l in _car_laps_list:
             if l.startTime in driver_map:
                 l.driver_name = driver_map[l.startTime].name
+
+    # fill charging data
+    for l in _car_laps_list:
+        for charging in _car_charging_processes:
+            charging.start_date = charging.start_date.replace(tzinfo=timezone.utc)
+            charging.end_date = charging.end_date.replace(tzinfo=timezone.utc)
+            if l.startTimePit <= charging.start_date and (not l.endTimePit or l.endTimePit > charging.start_date ):
+                # set the value
+                l.chargeEnergyAdded = charging.charge_energy_added
+                l.chargeStartSoc = charging.start_battery_level
+                l.chargeEndSoc = charging.end_battery_level
+                l.chargeStartRangeRated = charging.start_rated_range_km
+                l.chargeEndRangeRated = charging.end_rated_range_km
+                l.chargeRangeRatedAdded = charging.end_rated_range_km - charging.start_rated_range_km  # the validator doesn't fill it for some reason
+                l.chargeDurationMin = charging.duration_min
+                break  # load only one charging
 
     total_lap = _calculate_lap_total(_car_laps_list) if _car_laps_list else None
     recent_lap = _car_laps_list[-1] if _car_laps_list else None

@@ -114,6 +114,24 @@ def get_car_laps_json():
     return Response(laps.json() if laps else {}, mimetype='application.json')
 
 
+@app.route('/car_charging_json_full')
+def get_car_charging_json_full():
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    laps = teslamate_car_data.get_car_laps_formatted()
+    return Response(laps.json() if laps else {}, mimetype='application.json')
+
+
+@app.route('/car_charging_json')
+def get_car_charging_json():
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    laps = teslamate_car_data.get_car_laps_formatted()
+    return Response(laps.json() if laps else {}, mimetype='application.json')
+
+
 @app.route('/fio_balance_json')
 def get_fio_balance_json():
     if not _configuration.enabled:
@@ -123,10 +141,14 @@ def get_fio_balance_json():
     return Response(balance.json(), mimetype='application.json')
 
 
-@app.route('/configuration', methods=['GET', 'POST'])
+@app.route('/configuration', methods=['GET', 'POST', 'DELETE'])
 def configuration():
     global _configuration
-    if request.method == 'POST':
+    if request.method == 'DELETE':
+        app.logger.warning("trying to reset config")
+        _verify_post_token()  # abort inside
+        _configuration = _read_config_file()
+    elif request.method == 'POST':
         app.logger.warning("trying to post config")
         _verify_post_token()  # abort inside
         try:
