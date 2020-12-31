@@ -47,30 +47,13 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
     # we enter the starting region and pass through it.
     # For each point, find the distance to the starting region:
     distance = np.array([vincenty(point, start) for point in points])
+    #np.set_printoptions(suppress=True)
+    # print(distance)
+
     # Now look for points where we enter the region:
     # We want to avoid cases where we jump back and forth across the
     # boundary, so we set a minimum time we should spend inside the
     # region.
-    # enter_point = []
-    # current = start_idx
-    # in_region = True
-    # # old code
-    # for i, dist in enumerate(distance):
-    #     if i <= start_idx:
-    #         continue
-    #     if dist < region:  # we are inside the region
-    #         if distance[i - 1] > region:  # came from the outside
-    #             current = i
-    #             in_region = True
-    #     if in_region:
-    #         if dist > region:
-    #             delta_t = time[i] - time[current]
-    #             if min_time < delta_t.total_seconds():
-    #                 enter_point.append(current)
-    #             current = None
-    #             in_region = False
-
-    # new_code
     lapId = 1
     splits = []
     pit_entry_idx = None
@@ -115,19 +98,13 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
     if current_split and current_split.lapEntryIdx:  # do not include the one having just pit time
         splits.append(current_split)
 
-    # # old
-    # laps = []
-    # for i, idx in enumerate(enter_point):
-    #     try:
-    #         laps.append({"id": str(i + 1), "from": idx, "to": enter_point[i + 1]})
-    #     except IndexError:
-    #         laps.append({"id": str(i + 1), "from": idx, "to": len(points) - 1})
-    # agg_laps = aggregate_laps(configuration, laps)
-    # segment_laps = get_segment_laps(configuration, segment, agg_laps)
     agg_splits = aggregate_splits(configuration, splits)
 
     # new
-    return extract_lap_statuses(configuration, agg_splits, segment)
+    statuses = extract_lap_statuses(configuration, agg_splits, segment)
+    if not agg_splits[-1].lapLeaveIdx or distance[agg_splits[-1].lapLeaveIdx] > region:
+        statuses[-1].finished = False  # outside of region
+    return statuses
 
 
 def aggregate_splits(configuration: Configuration, splits: List[LapSplit]) -> List[LapSplit]:
@@ -233,5 +210,5 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
         endRangeRated=lap_data[-1].rated_battery_range_km,
 
         consumptionRated=configuration.consumptionRated,
-        finished=True  # TODO not true
+        finished=True  # will be set later
     )

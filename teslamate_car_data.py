@@ -9,19 +9,43 @@ from datetime import datetime
 
 logger = logging.getLogger('app.car_data')
 
-_get_configuration_func = None
+_get_configuration_func: Callable[[], Configuration] = None
 _data_source = TeslamateDataSource()
 _car_status = None
+_initial_status = None
 _car_laps_structured: LapsResponse = None
 _car_laps_list: List[LapStatus] = None
 
+
+def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configuration: Configuration):
+    start_time = pendulum.from_timestamp(configuration.startTime.timestamp(), tz='utc')
+    now = pendulum.now(tz='utc')
+    end_time = start_time.add(hours=configuration.hours)
+
+    status.start_time = start_time
+    status.end_time = end_time
+    status.start_odometer = initial_status.odometer
+    status.distance = status.odometer - initial_status.odometer if status.odometer and initial_status.odometer else 0
+    status.time_since_start = pendulum.period(start_time, now, True) if now >= start_time else pendulum.period(now, now, True)
+    status.time_to_end = pendulum.period(now, end_time, True) if now <= end_time else pendulum.period(now, now, True)
+
+
 def _update_car_status():
+    global _initial_status
     global _car_status
     global _data_source
     global _get_configuration_func
 
+    if not _initial_status:
+        logger.debug("updating initial car status")
+        _initial_status = _data_source.get_car_status(_get_configuration_func(), _get_configuration_func().startTime)
+        logger.debug("updating initial car status done")
+
     logger.debug("updating car status")
     _car_status = _data_source.get_car_status(_get_configuration_func())
+    if _car_status and _initial_status:
+        logger.debug("updating calculated fields")
+        _add_calculated_fields(_car_status, _initial_status, _get_configuration_func())
     logger.debug("updating car status done")
 
 

@@ -12,35 +12,40 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
-    <script src="static/jquery-3.5.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 
 
-	
+<style>
+    .column {
+        float: left;
+        width: 50%;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    /* Clear floats after the columns */
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+</style>
+
 </head>
 <body>
 <h1>{{ title }}</h1>
 
+<div class="row">
+    <div id="mapid" style="width: 600px; height: 400px;" class="column"></div>
+    <div id="status_text" class="column"></div>
+</div>
 
-<div id="mapid" style="width: 600px; height: 400px;"></div>
-<div id="status_text"></div>
 <script>
-    function getStatusTextItem(label, value, defaultValue, unit) {
-        if (!value) {
-            value = defaultValue;
-        }
-        return `<b>${label}:</b> ${value}${unit}<br/>`
-    }
-
-    function getStatusText(car_status) {
-        statusText = `<b>${car_status.name}</b><br/><br/>`;
-        if (car_status.driver_name) {
-            statusText += getStatusTextItem("Driver", car_status.driver_name, "---", "");
-        }
-        statusText += getStatusTextItem("Odo", Math.round(car_status.odometer), "---", "km");
-        statusText += getStatusTextItem("Speed", Math.round(car_status.speed), "0", "km/h");
-        statusText += getStatusTextItem("Elevation", car_status.elevation, "---", "m");
-        statusText += getStatusTextItem("Power", car_status.power, "0", "kW");
-        statusText += getStatusTextItem("SOC", car_status.usable_battery_level, "---", "%");
+    function getStatusText(car_status_labels) {
+        statusText = "";
+        car_status_labels.forEach(function (item, index) {
+          statusText += `<b>${item.label}</b>: ${item.value}<br/>`;
+        });
         return statusText;
     }
 
@@ -58,12 +63,24 @@
 
           };
 
+/*
+        // raw osm
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>',
             id: 'mapbox/streets-v11',
             tileSize: 512,
             zoomOffset: -1
+        }).addTo(mymap);
+*/
+        // mapbox osm
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox/streets-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: 'pk.eyJ1Ijoibm9ydG9uc2siLCJhIjoiY2tqYmVsODgzM2I1djJ5bGd5MjMwZW9rdCJ9.SB6qH7ooIOQsb_DdyiAMAA'  // public token
         }).addTo(mymap);
 
         var myRenderer = L.canvas({ padding: 0.5 });
@@ -79,9 +96,9 @@
           })
           .done(function(data) {
               car_status = data
-              circleMarker.setLatLng(new L.LatLng(car_status.latitude, car_status.longitude));
-              circleMarker._popup.setContent(getStatusText(car_status))
-              $("#status_text").html(statusText);
+              circleMarker.setLatLng(new L.LatLng(car_status.lat, car_status.lon));
+              circleMarker._popup.setContent(getStatusText(car_status.mapLabels))
+              $("#status_text").html(getStatusText(car_status.textLabels));
             })
           .fail(function() {
               statusText = "No data";

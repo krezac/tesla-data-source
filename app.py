@@ -7,7 +7,8 @@ import logging
 import fio_api
 import teslamate_car_data
 import lap_analyzer
-from ds_types import Configuration, DriverChange
+from ds_types import Configuration, DriverChange, JsonStatusResponse
+from labels import generate_labels
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -60,13 +61,37 @@ def index_page():
 
 
 # ########### JSON endpoints (AJAX) ############
-@app.route('/car_status_json')
-def get_car_status_json():
+@app.route('/car_status_json_full')
+def get_car_status_json_full():
+    """
+    This is for debugging purposes - shows all available data
+    """
     if not _configuration.enabled:
         return NOT_ENABLED_JSON
 
     status = teslamate_car_data.get_car_status()
     return Response(status.json() if status else {}, mimetype='application.json')
+
+
+@app.route('/car_status_json')
+def get_car_status_json():
+    """
+    This is to be used from web pages
+    :return:
+    """
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    status = teslamate_car_data.get_car_status()
+
+    out = JsonStatusResponse(
+        lat=status.latitude,
+        lon=status.longitude,
+        mapLabels=generate_labels(_configuration.mapLabels, status),
+        textLabels=generate_labels(_configuration.textLabels, status)
+    )
+
+    return Response(out.json(), mimetype='application.json')
 
 
 @app.route('/car_laps_json')

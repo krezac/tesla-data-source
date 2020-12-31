@@ -1,7 +1,16 @@
 from pydantic import BaseModel, validator
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 import pendulum
+
+
+class LabelConfigItem(BaseModel):
+    field: str
+    label: str
+    format: Optional[str]
+    format_function: Optional[str]
+    unit: Optional[str]
+    default: Optional[str]
 
 
 class Configuration(BaseModel):
@@ -10,7 +19,7 @@ class Configuration(BaseModel):
     startLatitude: float
     startLongitude: float
     startRadius: float
-    startTime: Optional[pendulum.DateTime]
+    startTime: Optional[datetime]
     hours: Optional[int]
     mergeFromLap: int
     lapsMerged: int
@@ -21,6 +30,8 @@ class Configuration(BaseModel):
     defaultMapZoom: int
     previousLaps: int
     minTimeLap: int
+    mapLabels: List[LabelConfigItem]
+    textLabels: List[LabelConfigItem]
 
 
 class CarStatus(BaseModel):
@@ -50,8 +61,16 @@ class CarStatus(BaseModel):
     est_battery_range_km: Optional[float]
     rated_battery_range_km: Optional[float]
     usable_battery_level: Optional[int]
-    name: str
+    car_name: str
     driver_name: Optional[str]
+
+    # calculated fields (diff from initial status
+    start_odometer: Optional[float]
+    distance: Optional[float]
+    start_time: Optional[pendulum.DateTime]
+    end_time: Optional[pendulum.DateTime]
+    time_since_start: Optional[pendulum.Duration]
+    time_to_end: Optional[pendulum.Duration]
 
 
 class Balance(BaseModel):
@@ -157,3 +176,14 @@ class DriverChange(BaseModel):
     name: str
     dateFrom: Optional[datetime]
 
+
+class JsonStatusResponseItem(BaseModel):
+    label: str
+    value: Optional[str]
+
+
+class JsonStatusResponse(BaseModel):
+    lat: float
+    lon: float
+    mapLabels: List[JsonStatusResponseItem]
+    textLabels: List[JsonStatusResponseItem]
