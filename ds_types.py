@@ -169,9 +169,11 @@ class LapStatus(BaseModel):
     chargeDurationMin: Optional[float]
 
     chargeSocAdded: Optional[float]
-    @validator('chargeSocAdded', always=True)
-    def set_soc_added(cls, v, values) -> float:
-        return values['chargeEndSoc'] - values['chargeStartSoc'] if values['chargeEndSoc'] and values['chargeStartSoc'] else 0
+
+    # TODO this doesn't work for some reason (the one above does). explicit assignement in car_data
+    # @validator('chargeSocAdded', always=True)
+    # def set_soc_added(cls, v, values) -> float:
+    #     return values['chargeEndSoc'] - values['chargeStartSoc'] if values['chargeEndSoc'] and values['chargeStartSoc'] else 0
 
     chargeRangeRatedAdded: Optional[float]
 

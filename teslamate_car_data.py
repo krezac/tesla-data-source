@@ -100,6 +100,7 @@ def _update_car_laps():
                 l.chargeStartRangeRated = charging.start_rated_range_km
                 l.chargeEndRangeRated = charging.end_rated_range_km
                 l.chargeRangeRatedAdded = charging.end_rated_range_km - charging.start_rated_range_km  # the validator doesn't fill it for some reason
+                l.chargeSocAdded = charging.end_battery_level - charging.start_battery_level  # the validator doesn't fill it for some reason
                 l.chargeDurationMin = charging.duration_min
                 break  # load only one charging
 
