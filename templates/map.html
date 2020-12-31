@@ -3,7 +3,7 @@
 <html>
 <head>
 	
-	<title>Quick Start - Leaflet</title>
+	<title>Car status and position</title>
 
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,7 +33,7 @@
 
 </head>
 <body>
-<h1>{{ title }}</h1>
+<h1>Car status and position</h1>
 
 <div class="row">
     <div id="mapid" style="width: 600px; height: 400px;" class="column"></div>
@@ -50,7 +50,7 @@
     }
 
     $(document).ready(function () {
-        var mymap = L.map('mapid').setView([0.0, 0.0], {{ zoom }});
+        var mymap = L.map('mapid').setView([0.0, 0.0], {{ zoom or 16 }});  // default if zoom not provided
 
         var geojsonMarkerOptions = {
             radius: 8,

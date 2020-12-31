@@ -64,6 +64,7 @@ Add it as new service to your Teslamate docker-compose.yml
       - project1
     volumes:
       - ./config.json:/etc/tesla-data-source/config.json:ro
+      - ./custom_templates:/app/templates/custom:ro
 ```
 
 Remember to change the tokens. 
@@ -77,6 +78,11 @@ You can ignore the labels if not using Traefik.
 * TM_DB_HOST: database host (server name)
 * POST_CONFIG_TOKEN: token fro POST operations
 * FIO_API_TOKEN: token for loading FIO account balance
+
+
+### Volumes
+* override default config.json
+* map directory for custom templates
 
 ## Config file
 If in doubt about the doc being up to date, take the sample config from source code.
@@ -98,7 +104,71 @@ The same structure is used to POST to update the config
   "fioRefreshSeconds": 900,
   "defaultMapZoom": 16,
   "previousLaps": 10,
-  "minTimeLap": 10
+  "minTimeLap": 10,
+  "mapLabels": [
+    {
+      "field": "car_name",
+      "label": "Car",
+      "default": "---"
+    },
+    {
+      "field": "driver_name",
+      "label": "Driver",
+      "default": "---"
+    }
+  ],
+  "textLabels": [
+    {
+      "field": "car_name",
+      "label": "Car",
+      "default": "---"
+    },
+    {
+      "field": "start_time",
+      "label": "Start time",
+      "format_function": "format_datetime_fn",
+      "format": "DD.MM.YYYY HH:mm:ss",
+      "unit": "",
+      "default": "---"
+    },
+    {
+      "field": "end_time",
+      "label": "End time",
+      "format_function": "format_datetime_fn",
+      "format": "DD.MM.YYYY HH:mm:ss",
+      "unit": "",
+      "default": "---"
+    },
+    {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km",
+      "default": "---"
+    },
+    {
+      "field": "time_since_start",
+      "label": "Time since start",
+      "format_function": "format_period_words_fn",
+      "unit": "",
+      "default": "---"
+    },
+    {
+      "field": "time_since_start",
+      "label": "Time since start",
+      "format_function": "format_period_fn",
+      "unit": "",
+      "default": "---"
+    },
+    {
+      "field": "time_to_end",
+      "label": "Time to end",
+      "format_function": "format_period_fn",
+      "unit": "",
+      "default": "---"
+    }
+  ]
 }
 ```
 
@@ -118,7 +188,27 @@ The same structure is used to POST to update the config
 * fioRefreshSeconds: how often bank account balance is refreshed from bank API [900]
 * defaultMapZoom: zoom level at page load. The higher, the closer (max 19) [16]
 * previousLaps: number of previous laps to be displayed [10]
-* minTimeLap: minimum number of seconds in pit or on lap to count it [10] 
+* minTimeLap: minimum number of seconds in pit or on lap to count it [10]
+* mapLabels: labels displayed in the bubble on map
+* textLabels: labels displayed next to the map
+
+## Label formatting
+```json
+{
+  "field": "distance",
+  "label": "Distance",
+  "format_function": "format_float_fn",
+  "format": "%.2f",
+  "unit": "km",
+  "default": "---"
+}
+```
+* field: any field available in CarStatus class
+* label: displayed label
+* format_function: formatting functions from labels.py (if not provided, output is just str())
+* format: format string (used by the function) if needed
+* unit: unit concatenated after the value
+* default: default value used if the actual value is null/None
 
 ## JSON Endpoints
 
@@ -185,3 +275,7 @@ Gets the simple page with an OSM map displaying the current position and some da
 
 ### GET /laps_table
 Gets table of laps according to configured params. This one may get changed or disappear completely.
+
+### GET /custom?_template=xxxx
+Open page using custom templates (provided thru mapped volume). if the page in custom_templates folder (see mapping above) is a.html, use
+```/custom?_template=custom/a.html```

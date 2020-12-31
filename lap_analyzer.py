@@ -54,22 +54,30 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
     # We want to avoid cases where we jump back and forth across the
     # boundary, so we set a minimum time we should spend inside the
     # region.
+
+    # let's assume we are in pit or at the lap already at start time
+
     lapId = 1
     splits = []
     pit_entry_idx = None
     lap_entry_idx = None
-    in_pit = True
     current_split = None
-    skip_lead = True
-    for i, dist in enumerate(distance):
-        if i <= start_idx:
-            continue
-        if skip_lead:  # this is to skip the beginning of data if outside of pit
-            if dist > region:
-                continue
-            else:
-                skip_lead = False
 
+    for i, dist in enumerate(distance):
+        if i == start_idx:  # in fact that just skips the first one
+            if distance[0] > region:  # already at lap, so create new one
+                current_split = LapSplit(
+                    lapId=lapId,
+                    pitEntryIdx=start_idx,
+                    pitLeaveIdx=start_idx,
+                    lapEntryIdx=start_idx
+                )
+            else:  # in pit
+                current_split = LapSplit(
+                    lapId=lapId,
+                    pitEntryIdx=start_idx,
+                )
+            continue
         if dist <= region:  # we are inside the pit
             if distance[i - 1] <= region:  # was in pit before
                 if pit_entry_idx:  # not recorded yet

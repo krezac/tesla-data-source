@@ -4,7 +4,7 @@
   "startLatitude": 49.532655,
   "startLongitude": 12.135862,
   "startRadius": 100.0,
-  "startTime": "2020-12-26T16:29:00+00:00",
+  "startTime": "2020-12-26T17:09:00+00:00",
   "hours": 24,
   "mergeFromLap": 1,
   "lapsMerged": 1,
@@ -78,6 +78,5 @@
       "unit": "",
       "default": "---"
     }
-
   ]
 }

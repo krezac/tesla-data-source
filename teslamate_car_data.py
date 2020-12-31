@@ -120,17 +120,16 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
 
 def get_car_status() -> CarStatus:
     global _car_status
+    if not _car_status:
+        _update_car_status()
     return _car_status
 
 
 def get_car_laps() -> LapsResponse:
     global _car_laps_structured
+    if not _car_laps_structured:
+        _update_car_laps()
     return _car_laps_structured
-
-
-def get_car_positions(configuration: Configuration):
-    # TODO this should go thru cache
-    return _data_source.get_car_positions(configuration)
 
 
 def apply_driver_change(driver_change: DriverChange):

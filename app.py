@@ -60,6 +60,13 @@ def index_page():
     return 'Nothing here. You need to know the magic word.'
 
 
+@app.route('/custom')
+def custom_page():
+    template = request.args.get('_template', default=None, type=str)
+    if not template:
+        abort(404)
+    return render_template(template)
+
 # ########### JSON endpoints (AJAX) ############
 @app.route('/car_status_json_full')
 def get_car_status_json_full():
@@ -153,9 +160,7 @@ def car_map():
     if not _configuration.enabled:
         return render_template('not_enabled.html')
 
-    car_status = teslamate_car_data.get_car_status()
-    return render_template('map.html',
-                           car_status=car_status, title="Car status and position", zoom=_configuration.defaultMapZoom)
+    return render_template('map.html', zoom=_configuration.defaultMapZoom)
 
 
 @app.route('/fio_balance')
