@@ -207,8 +207,8 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
         startOdo=lap_data[0].odometer,
         endOdo=lap_data[-1].odometer,
 
-        insideTemp=statistics.mean([l.inside_temp for l in lap_data]),
-        outsideTemp=statistics.mean([l.outside_temp for l in lap_data]),
+        insideTemp=statistics.mean([l.inside_temp for l in lap_data if l]),
+        outsideTemp=statistics.mean([l.outside_temp for l in lap_data if l]),
 
         startSOC=lap_data[0].usable_battery_level,
         endSOC=lap_data[-1].usable_battery_level,
