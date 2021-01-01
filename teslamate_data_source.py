@@ -45,12 +45,11 @@ class TeslamateDataSource:
         return out_data
 
     def _cursor_one_to_dict(self, cursor):
-        out_data = {}
         column_names = [i[0] for i in cursor.description]
         row = cursor.fetchone()
         return dict(zip(column_names, row)) if row else None
 
-    def get_car_status(self, configuration: Configuration, date: datetime=datetime.now(tz=timezone.utc)) -> CarStatus:
+    def get_car_status(self, configuration: Configuration, date: datetime) -> CarStatus:
         """
         note there are two types of rows, one contains all but elevation, the other one altitude.
         That's why we need two reads
@@ -64,15 +63,17 @@ class TeslamateDataSource:
                 logger.info(f"getting status for {date}")
                 pos_cursor_1.execute("select car.name as car_name, pos.* from positions pos JOIN cars car on pos.car_id = car.id WHERE car_id = %s::integer AND usable_battery_level IS NOT NULL AND date < %s::timestamptz order by date desc limit 1",
                                    (configuration.carId, date))
-                # logger.debug(pos_cursor_1.query)
+                if configuration.debugSql:
+                    logger.debug(pos_cursor_1.query)
                 out_data = self._cursor_one_to_dict(pos_cursor_1)
                 pos_cursor_1.close()
 
                 # get the one most recent one containing elevation (take other fields as well)
                 pos_cursor_2 = ps_connection.cursor()
-                pos_cursor_2.execute("select latitude, longitude, speed, power, odometer, elevation from positions WHERE car_id = %s::integer AND elevation IS NOT NULL AND date < %s::timestamptz order by date desc limit 1",
+                pos_cursor_2.execute("select date, latitude, longitude, speed, power, odometer, elevation from positions WHERE car_id = %s::integer AND elevation IS NOT NULL AND date < %s::timestamptz order by date desc limit 1",
                                    (configuration.carId, date))
-                # logger.debug(pos_cursor_2.query)
+                if configuration.debugSql:
+                    logger.debug(pos_cursor_2.query)
                 out_data_2 = self._cursor_one_to_dict(pos_cursor_2)
                 out_data.update(out_data_2)  # just add the extra fields
                 pos_cursor_2.close()
@@ -109,7 +110,8 @@ class TeslamateDataSource:
                              configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
                              configuration.hours,
                              configuration.carId))
-                # logger.debug(pos_cursor.query)
+                if configuration.debugSql:
+                    logger.debug(pos_cursor.query)
                 logger.debug(f"The number of parts: {pos_cursor.rowcount}")
 
                 rdef = namedtuple('dataset', ' '.join([x[0] for x in pos_cursor.description]))
@@ -127,7 +129,7 @@ class TeslamateDataSource:
                 TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
         return out_data
 
-    def apply_driver_change(self, driver_change: DriverChange):
+    def apply_driver_change(self, configuration: Configuration, driver_change: DriverChange):
         try:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
             if ps_connection:
@@ -137,10 +139,12 @@ class TeslamateDataSource:
                 cursor = ps_connection.cursor()
                 cursor.execute("update ds_driver_changes set date_to=%s::timestamptz WHERE date_to IS NULL",
                                    (change_date,))
-                # logger.debug(cursor.query)
+                if configuration.debugSql:
+                    logger.debug(cursor.query)
                 cursor.execute("insert into ds_driver_changes(name, date_from) values (%s, %s::timestamptz)",
                                    (driver_change.name, change_date))
-                # logger.debug(cursor.query)
+                if configuration.debugSql:
+                    logger.debug(cursor.query)
                 ps_connection.commit()
                 cursor.close()
             else:
@@ -152,7 +156,7 @@ class TeslamateDataSource:
             if ps_connection:
                 TeslamateDataSource.postgreSQL_pool.putconn(ps_connection)
 
-    def get_driver_changes(self, dates: List[datetime]) -> Dict[datetime, DriverChange]:
+    def get_driver_changes(self, configuration: Configuration, dates: List[datetime]) -> Dict[datetime, DriverChange]:
         out = {}
         try:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
@@ -162,7 +166,8 @@ class TeslamateDataSource:
                 for d in dates:
                     cursor.execute("select * from ds_driver_changes where date_from <= %s::timestamptz and (date_to >= %s::timestamptz or date_to is null) order by date_from desc limit 1",
                                        (d, d))
-                    # logger.debug(cursor.query)
+                    if configuration.debugSql:
+                        logger.debug(cursor.query)
                     out_data = self._cursor_one_to_dict(cursor)
                     if out_data:
                         out[d] = DriverChange(**out_data)
@@ -188,7 +193,8 @@ class TeslamateDataSource:
                              configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
                              configuration.hours,
                              configuration.carId))
-                # logger.debug(pos_cursor.query)
+                if configuration.debugSql:
+                    logger.debug(pos_cursor.query)
                 logger.debug(f"The number of chargings: {pos_cursor.rowcount}")
 
                 row = self._cursor_to_list(pos_cursor)

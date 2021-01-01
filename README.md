@@ -90,6 +90,7 @@ The same structure is used to POST to update the config
 ```json
 {
   "enabled": true,
+  "debugSql": false,
   "carId": 1,
   "startLatitude": 49.321039,
   "startLongitude": 13.704535,
@@ -169,7 +170,7 @@ The same structure is used to POST to update the config
       "default": "---"
     }
   ],
-  "lapLabels": [
+  "lapLabelsTotal": [
     {
       "field": "id",
       "label": "Lap",
@@ -187,12 +188,27 @@ The same structure is used to POST to update the config
       {
         "TODO": "TODO"
       }
+  ],
+  "lapLabelsRecent": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    }
+  ],
+  "lapLabelsPrevious": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    }
   ]
 }
 ```
 
 ### Config fields meaning
 * enabled: publishing the data is enabled [true]
+* debugSql: log SQL queries [false]
 * carId: car identifier from the database [1]
 * startLatitude: latitude of starting point [49.321039]
 * startLongitude: longitude of stating point [13.704535]
@@ -210,7 +226,9 @@ The same structure is used to POST to update the config
 * minTimeLap: minimum number of seconds in pit or on lap to count it [10]
 * mapLabels: labels displayed in the bubble on map
 * textLabels: labels displayed next to the map
-* lapLabels: labels used to display lap details
+* lapLabelsTotal: labels used to display lap details for total
+* lapLabelsRecent: labels used to display lap details for recent lap
+* lapLabelsPrevious: labels used to display lap details for previous lap
 * chargingLabels: labels used to display charging details
 
 ## Label formatting

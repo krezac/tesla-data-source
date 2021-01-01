@@ -15,6 +15,7 @@ class LabelConfigItem(BaseModel):
 
 class Configuration(BaseModel):
     enabled: bool
+    debugSql: bool
     carId: int
     startLatitude: float
     startLongitude: float
@@ -32,7 +33,9 @@ class Configuration(BaseModel):
     minTimeLap: int
     mapLabels: List[LabelConfigItem]
     textLabels: List[LabelConfigItem]
-    lapLabels: List[LabelConfigItem]
+    lapLabelsTotal: List[LabelConfigItem]
+    lapLabelsRecent: List[LabelConfigItem]
+    lapLabelsPrevious: List[LabelConfigItem]
     chargingLabels: List[LabelConfigItem]
 
 
@@ -161,13 +164,13 @@ class LapStatus(BaseModel):
     def set_energy(cls, v, values) -> float:
         return values['startEnergy'] - values['endEnergy']
 
+    chargeStartTime: Optional[pendulum.DateTime]
+    chargeEndTime: Optional[pendulum.DateTime]
     chargeEnergyAdded: Optional[float]
     chargeStartSoc: Optional[float]
     chargeEndSoc: Optional[float]
     chargeStartRangeRated: Optional[float]
     chargeEndRangeRated: Optional[float]
-    chargeDurationMin: Optional[float]
-
     chargeSocAdded: Optional[float]
 
     # TODO this doesn't work for some reason (the one above does). explicit assignement in car_data
@@ -181,6 +184,12 @@ class LapStatus(BaseModel):
     #@validator('chargeRangeRatedAdded', always=True)
     #def set_charge_energy_added(cls, v, values) -> float:
     #    return values['chargeEndRangeRated'] - values['chargeStartRangeRated'] if values['chargeEndRangeRated'] and values['chargeStartRangeRated'] else 0
+
+    chargeDuration: Optional[pendulum.Duration]
+
+    @validator('chargeDuration', always=True)
+    def set_charge_energy_added(cls, v, values) -> pendulum.Duration:
+        return values['chargeEndTime'] - values['chargeStartTime'] if values['chargeEndTime'] and values['chargeStartTime'] else pendulum.Period(pendulum.now(), pendulum.now())
 
 
 class LapsList(BaseModel):
@@ -221,13 +230,13 @@ class JsonStatusResponse(BaseModel):
 class ChargingProcess(BaseModel):
     start_date: datetime
     end_date: Optional[datetime]
-    charge_energy_added: float
-    start_battery_level: int
-    end_battery_level: int
-    duration_min: int
-    outside_temp_avg: float
-    start_ideal_range_km: float
-    end_ideal_range_km: float
-    start_rated_range_km: float
-    end_rated_range_km: float
-    charge_energy_used: float
+    charge_energy_added: Optional[float]
+    start_battery_level: Optional[int]
+    end_battery_level: Optional[int]
+    duration_min: Optional[int]
+    outside_temp_avg: Optional[float]
+    start_ideal_range_km: Optional[float]
+    end_ideal_range_km: Optional[float]
+    start_rated_range_km: Optional[float]
+    end_rated_range_km: Optional[float]
+    charge_energy_used: Optional[float]

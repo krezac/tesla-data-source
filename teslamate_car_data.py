@@ -52,7 +52,7 @@ def _update_car_status():
         logger.debug("updating initial car status done")
 
     logger.debug("updating car status")
-    _car_status = _data_source.get_car_status(_get_configuration_func())
+    _car_status = _data_source.get_car_status(_get_configuration_func(), datetime.now(tz=timezone.utc))
     if _car_status and _initial_status:
         logger.debug("updating calculated fields")
         _add_calculated_fields(_car_status, _initial_status, _get_configuration_func())
@@ -82,7 +82,7 @@ def _update_car_laps():
     # load driver names
     dates = [l.startTime for l in _car_laps_list]
     if dates:
-        driver_map = _data_source.get_driver_changes(dates)
+        driver_map = _data_source.get_driver_changes(configuration, dates)
         for l in _car_laps_list:
             if l.startTime in driver_map:
                 l.driver_name = driver_map[l.startTime].name
@@ -90,10 +90,14 @@ def _update_car_laps():
     # fill charging data
     for l in _car_laps_list:
         for charging in _car_charging_processes:
+            if not charging.end_date:
+                continue  # incomplete records - they are visible in the db from time to time
             charging.start_date = charging.start_date.replace(tzinfo=timezone.utc)
             charging.end_date = charging.end_date.replace(tzinfo=timezone.utc)
             if l.startTimePit <= charging.start_date and (not l.endTimePit or l.endTimePit > charging.start_date ):
                 # set the value
+                l.chargeStartTime = pendulum.from_timestamp(charging.start_date.timestamp())
+                l.chargeEndTime = pendulum.from_timestamp(charging.end_date.timestamp())
                 l.chargeEnergyAdded = charging.charge_energy_added
                 l.chargeStartSoc = charging.start_battery_level
                 l.chargeEndSoc = charging.end_battery_level
@@ -101,7 +105,7 @@ def _update_car_laps():
                 l.chargeEndRangeRated = charging.end_rated_range_km
                 l.chargeRangeRatedAdded = charging.end_rated_range_km - charging.start_rated_range_km  # the validator doesn't fill it for some reason
                 l.chargeSocAdded = charging.end_battery_level - charging.start_battery_level  # the validator doesn't fill it for some reason
-                l.chargeDurationMin = charging.duration_min
+                l.chargeDuration = pendulum.Period(charging.start_date, charging.end_date)
                 break  # load only one charging
 
     total_lap = _calculate_lap_total(_car_laps_list) if _car_laps_list else None
@@ -109,9 +113,9 @@ def _update_car_laps():
     prev_lap_list = _car_laps_list[-configuration.previousLaps - 1:-1] if len(_car_laps_list) > 0 else []
     prev_lap_list.reverse()  # to have newest on top
 
-    total_formatted = generate_labels(_get_configuration_func().lapLabels, total_lap.dict())
-    previous_formatted = [generate_labels(_get_configuration_func().lapLabels, lap.dict()) for lap in prev_lap_list]
-    recent_formatted = generate_labels(_get_configuration_func().lapLabels, recent_lap.dict())
+    total_formatted = generate_labels(_get_configuration_func().lapLabelsTotal, total_lap.dict())
+    previous_formatted = [generate_labels(_get_configuration_func().lapLabelsPrevious, lap.dict()) for lap in prev_lap_list]
+    recent_formatted = generate_labels(_get_configuration_func().lapLabelsRecent, recent_lap.dict())
 
     _car_laps_formatted = JsonLapsResponse(
         total=total_formatted,
@@ -153,10 +157,10 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
     chargeSocAdded = 0
     chargeEnergyAdded = 0
     chargeRangeAdded = 0
-    chargeMinutes = 0
     now = pendulum.now(tz='utc')
     duration = pendulum.Period(now, now)
     pit_duration = pendulum.Period(now, now)
+    chargeDuration = pendulum.Period(now, now)
     for lap in laps:
         energy += lap.energy
         duration += lap.duration
@@ -164,14 +168,14 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
         chargeSocAdded += lap.chargeSocAdded if lap.chargeSocAdded else 0
         chargeEnergyAdded += lap.chargeEnergyAdded if lap.chargeEnergyAdded else 0
         chargeRangeAdded += lap.chargeRangeRatedAdded if lap.chargeRangeRatedAdded else 0
-        chargeMinutes += lap.chargeDurationMin if lap.chargeDurationMin else 0
+        chargeDuration += lap.chargeDuration if lap.chargeDuration else pendulum.Period(now, now)
     total_status.energy = energy
     total_status.duration = duration
     total_status.pitDuration = pit_duration
     total_status.chargeSocAdded = chargeSocAdded
     total_status.chargeEnergyAdded = chargeEnergyAdded
     total_status.chargeRangeRatedAdded = chargeEnergyAdded
-    total_status.chargeDurationMin = chargeMinutes
+    total_status.chargeDuration = chargeDuration
 
     return total_status
 
@@ -205,11 +209,13 @@ def get_car_laps_formatted() -> JsonLapsResponse:
 
 
 def apply_driver_change(driver_change: DriverChange):
-    return _data_source.apply_driver_change(driver_change)
+    global _get_configuration_func
+    return _data_source.apply_driver_change(_get_configuration_func(), driver_change)
 
 
 def get_driver_changes(self, dates: List[datetime]) -> Dict[datetime, DriverChange]:
-    return _data_source.get_driver_changes(dates)
+    global _get_configuration_func
+    return _data_source.get_driver_changes(_get_configuration_func(), dates)
 
 
 def register_jobs(scheduler, get_configuration_func: Callable[[], Configuration]):

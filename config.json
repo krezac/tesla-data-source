@@ -1,5 +1,6 @@
 {
   "enabled": true,
+  "debugSql": false,
   "carId": 2,
   "startLatitude": 49.532655,
   "startLongitude": 12.135862,
@@ -110,7 +111,81 @@
         "default": "---"
     }
   ],
-  "lapLabels": [
+  "lapLabelsTotal": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    },
+    {
+    "field": "startTime",
+    "label": "Start",
+    "format_function": "format_datetime_fn",
+    "format": "DD.MM.YYYY HH:mm:ss",
+    "default": "---"
+    },
+    {
+      "field": "duration",
+      "label": "Time",
+      "format_function": "format_period_fn",
+      "unit": ""
+    },
+    {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km"
+    },
+    {
+      "field": "avgSpeed",
+      "label": "Avg Speed",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km/h"
+    },
+    {
+      "field": "energy",
+      "label": "Energy",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh"
+    },
+    {
+      "field": "outsideTemp",
+      "label": "Temp",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "°C"
+    },
+    {
+      "field": "driver_name",
+      "label": "Driver",
+      "default": "---"
+    },
+    {
+      "field": "chargeEnergyAdded",
+      "label": "Charge Energy Added",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh"
+    },
+    {
+      "field": "chargeSocAdded",
+      "label": "SOC added",
+      "format_function": "format_float_fn",
+      "format": "%.0f",
+      "unit": "%"
+    },
+    {
+      "field": "chargeRangeRatedAdded",
+      "label": "Charge Range Added",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    }
+  ],
+  "lapLabelsRecent": [
     {
       "field": "id",
       "label": "Lap",
@@ -212,11 +287,132 @@
       "unit": "km"
     },
     {
-      "field": "chargeDurationMin",
+      "field": "chargeStartTime",
+      "label": "Charge Start",
+    "format_function": "format_datetime_fn",
+    "format": "DD.MM.YYYY HH:mm:ss",
+    "default": "---"
+    },
+    {
+      "field": "chargeDuration",
       "label": "Charge Duration",
+      "format_function": "format_period_fn",
+      "format": "%.0f"
+    }
+  ],
+  "lapLabelsPrevious": [
+    {
+      "field": "id",
+      "label": "Lap",
+      "default": "---"
+    },
+    {
+    "field": "startTime",
+    "label": "Start",
+    "format_function": "format_datetime_fn",
+    "format": "DD.MM.YYYY HH:mm:ss",
+    "default": "---"
+    },
+    {
+      "field": "duration",
+      "label": "Time",
+      "format_function": "format_period_fn",
+      "unit": ""
+    },
+    {
+      "field": "distance",
+      "label": "Distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "unit": "km"
+    },
+    {
+      "field": "avgSpeed",
+      "label": "Avg Speed",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km/h"
+    },
+    {
+      "field": "energy",
+      "label": "Energy",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh"
+    },
+    {
+      "field": "outsideTemp",
+      "label": "Temp",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "°C"
+    },
+    {
+      "field": "driver_name",
+      "label": "Driver",
+      "default": "---"
+    },
+    {
+      "field": "chargeEnergyAdded",
+      "label": "Charge Energy Added",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh"
+    },
+    {
+      "field": "chargeStartSoc",
+      "label": "Charge Start Soc",
       "format_function": "format_float_fn",
       "format": "%.0f",
-      "unit": "min"
+      "unit": "%"
+    },
+    {
+      "field": "chargeEndSoc",
+      "label": "Charge End Soc",
+      "format_function": "format_float_fn",
+      "format": "%.0f",
+      "unit": "%"
+    },
+    {
+      "field": "chargeSocAdded",
+      "label": "SOC added",
+      "format_function": "format_float_fn",
+      "format": "%.0f",
+      "unit": "%"
+    },
+    {
+      "field": "chargeStartRangeRated",
+      "label": "Charge Start Range",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "chargeEndRangeRated",
+      "label": "Charge End Range",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "chargeRangeRatedAdded",
+      "label": "Charge Range Added",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "chargeStartTime",
+      "label": "Charge Start",
+    "format_function": "format_datetime_fn",
+    "format": "HH:mm:ss",
+    "default": "---"
+    },
+    {
+      "field": "chargeDuration",
+      "label": "Charge Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
     }
 
   ],
