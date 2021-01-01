@@ -1,11 +1,12 @@
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Optional
 import pendulum
 import logging
 
 from teslamate_data_source import TeslamateDataSource
-from ds_types import Configuration, LapStatus, CarStatus, DriverChange, LapsList, JsonLapsResponse, JsonStatusResponse
+from ds_types import Configuration, LapStatus, CarStatus, DriverChange, LapsList, JsonLapsResponse, JsonStatusResponse, ForecastResult
 from labels import generate_labels
 import lap_analyzer
+from lap_forecast import do_forecast
 from datetime import datetime, timezone
 
 logger = logging.getLogger('app.car_data')
@@ -19,6 +20,7 @@ _initial_status: CarStatus = None
 _car_laps_list: List[LapStatus] = None
 _car_laps_formatted: JsonLapsResponse = None
 _car_charging_processes = None
+_forecast_result: ForecastResult = None
 
 
 def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configuration: Configuration):
@@ -45,6 +47,7 @@ def _update_car_status():
     global _car_status_formatted
     global _data_source
     global _get_configuration_func
+    global _forecast_result
 
     if not _initial_status:
         logger.debug("updating initial car status")
@@ -57,12 +60,15 @@ def _update_car_status():
         logger.debug("updating calculated fields")
         _add_calculated_fields(_car_status, _initial_status, _get_configuration_func())
 
+    _update_forecast_result()
+
     # build the formatted form
     _car_status_formatted = JsonStatusResponse(
         lat=_car_status.latitude,
         lon=_car_status.longitude,
         mapLabels=generate_labels(_get_configuration_func().mapLabels, _car_status.dict()),
-        textLabels=generate_labels(_get_configuration_func().textLabels, _car_status.dict())
+        textLabels=generate_labels(_get_configuration_func().textLabels, _car_status.dict()),
+        forecastLabels=generate_labels(_get_configuration_func().forecastLabels, _forecast_result.dict() if _forecast_result else {})
     )
     logger.debug("updating car status done")
 
@@ -88,7 +94,11 @@ def _update_car_laps():
                 l.driver_name = driver_map[l.startTime].name
 
     # fill charging data
+    first = True
     for l in _car_laps_list:
+        if first:  # ignore any charging for first lap
+            first = False
+            continue
         for charging in _car_charging_processes:
             if not charging.end_date:
                 continue  # incomplete records - they are visible in the db from time to time
@@ -106,6 +116,8 @@ def _update_car_laps():
                 l.chargeRangeRatedAdded = charging.end_rated_range_km - charging.start_rated_range_km  # the validator doesn't fill it for some reason
                 l.chargeSocAdded = charging.end_battery_level - charging.start_battery_level  # the validator doesn't fill it for some reason
                 l.chargeDuration = pendulum.Period(charging.start_date, charging.end_date)
+                l.chargeMaxPower = charging.max_power
+                l.chargeEnergyPerHour = charging.charge_energy_added * 3600.0 / l.chargeDuration.in_seconds()
                 break  # load only one charging
 
     total_lap = _calculate_lap_total(_car_laps_list) if _car_laps_list else None
@@ -113,9 +125,9 @@ def _update_car_laps():
     prev_lap_list = _car_laps_list[-configuration.previousLaps - 1:-1] if len(_car_laps_list) > 0 else []
     prev_lap_list.reverse()  # to have newest on top
 
-    total_formatted = generate_labels(_get_configuration_func().lapLabelsTotal, total_lap.dict())
+    total_formatted = generate_labels(_get_configuration_func().lapLabelsTotal, total_lap.dict() if total_lap else {})
     previous_formatted = [generate_labels(_get_configuration_func().lapLabelsPrevious, lap.dict()) for lap in prev_lap_list]
-    recent_formatted = generate_labels(_get_configuration_func().lapLabelsRecent, recent_lap.dict())
+    recent_formatted = generate_labels(_get_configuration_func().lapLabelsRecent, recent_lap.dict() if recent_lap else {})
 
     _car_laps_formatted = JsonLapsResponse(
         total=total_formatted,
@@ -180,6 +192,25 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
     return total_status
 
 
+def _update_forecast_result():
+    global _car_laps_list
+    global _car_status
+    global _get_configuration_func
+    global _forecast_result
+
+    logger.info("updating forecast")
+
+    if not _car_status and _car_laps_list:
+        logger.info("no data, no forecast")
+        return
+
+    print(_get_configuration_func())
+    print(_car_laps_list)
+    print(_car_status)
+    _forecast_result = do_forecast(_get_configuration_func(), _car_laps_list, _car_status, pendulum.now(tz='utc'))
+    logger.info("updating done")
+
+
 def get_car_status() -> CarStatus:
     global _car_status
     if not _car_status:
@@ -206,6 +237,13 @@ def get_car_laps_formatted() -> JsonLapsResponse:
     if not _car_laps_formatted:
         _update_car_laps()
     return _car_laps_formatted
+
+
+def get_forecast_result() -> Optional[ForecastResult]:
+    global _forecast_result
+    if not _forecast_result:
+        _update_forecast_result()
+    return _forecast_result
 
 
 def apply_driver_change(driver_change: DriverChange):

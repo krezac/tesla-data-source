@@ -75,7 +75,8 @@ class TeslamateDataSource:
                 if configuration.debugSql:
                     logger.debug(pos_cursor_2.query)
                 out_data_2 = self._cursor_one_to_dict(pos_cursor_2)
-                out_data.update(out_data_2)  # just add the extra fields
+                if out_data and out_data_2:
+                    out_data.update(out_data_2)  # just add the extra fields
                 pos_cursor_2.close()
 
                 # get driver
@@ -87,7 +88,7 @@ class TeslamateDataSource:
                 if d:
                     out_data["driver_name"] = d["name"]
                 driver_cursor.close()
-                status = CarStatus(**out_data)
+                status = CarStatus(**out_data) if out_data else None
             else:
                 raise Exception("no connection from pool")
 
@@ -188,7 +189,7 @@ class TeslamateDataSource:
             ps_connection = TeslamateDataSource.postgreSQL_pool.getconn()
             if ps_connection:
                 pos_cursor = ps_connection.cursor()
-                pos_cursor.execute("SELECT * FROM charging_processes where start_date >= %s::timestamptz AND start_date <= (%s::timestamptz + '%s hour'::interval) AND car_id = %s::integer",
+                pos_cursor.execute("SELECT * FROM charging_processes chp  inner join (select charging_process_id, max(charger_power) as max_power from charges group by charging_process_id) mp on mp.charging_process_id=chp.id  where start_date >= %s::timestamptz AND start_date <= (%s::timestamptz + '%s hour'::interval) AND car_id = %s::integer",
                             (configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
                              configuration.startTime if configuration.startTime else datetime.now(tz=timezone.utc),
                              configuration.hours,

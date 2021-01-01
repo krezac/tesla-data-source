@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, Response, abort
+from flask import Flask, request, render_template, Response, abort, g
 
 import os
 import sys
@@ -46,6 +46,13 @@ def _verify_post_token():
         abort(403)
 
 
+def _update_global_context():
+    g.car_status = teslamate_car_data.get_car_status_formatted()
+    g.car_laps = teslamate_car_data.get_car_laps_formatted()
+    g.configuration = _configuration
+    g.fio_balance = fio_api.get_balance_info()
+
+
 def get_configuration():
     """
     this is for background jobs to get the fresh configuration
@@ -57,7 +64,12 @@ def get_configuration():
 ###################### main
 @app.route('/')
 def index_page():
-    return 'Nothing here. You need to know the magic word.'
+    if not _configuration.enabled:
+        return render_template('not_enabled.html')
+
+    _update_global_context()
+    return render_template(_configuration.defaultPageTemplate,  title=_configuration.defaultPageTitle,
+                           config=_configuration)
 
 
 @app.route('/custom')
@@ -65,7 +77,8 @@ def custom_page():
     template = request.args.get('_template', default=None, type=str)
     if not template:
         abort(404)
-    return render_template(template)
+    _update_global_context()
+    return render_template(template, title=template)
 
 
 # ########### JSON endpoints (AJAX) ############
@@ -132,6 +145,18 @@ def get_car_charging_json():
     return Response(laps.json() if laps else {}, mimetype='application.json')
 
 
+@app.route('/forecast_json_full')
+def get_forecast_json_full():
+    """
+    This is for debugging purposes - shows all available data
+    """
+    if not _configuration.enabled:
+        return NOT_ENABLED_JSON
+
+    forecast = teslamate_car_data.get_forecast_result()
+    return Response(forecast.json() if forecast else {}, mimetype='application.json')
+
+
 @app.route('/fio_balance_json')
 def get_fio_balance_json():
     if not _configuration.enabled:
@@ -194,7 +219,7 @@ def dashboard():
     if not _configuration.enabled:
         return render_template('not_enabled.html')
 
-    return render_template('dashboard.html', zoom=_configuration.defaultMapZoom, title="Tesla Racing Dashboard",
+    return render_template('dashboard.html', title="Tesla Racing Dashboard",
                            config=_configuration)
 
 
@@ -203,8 +228,8 @@ def get_fio_balance():
     if not _configuration.enabled:
         return render_template('not_enabled.html')
 
-    balance = fio_api.get_balance_info()
-    return render_template('fio_balance.html', balance=balance, title="Balance")
+    _update_global_context()
+    return render_template('fio_balance.html', title="Balance")
 
 
 @app.route('/laps_table')

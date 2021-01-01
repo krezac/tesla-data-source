@@ -49,8 +49,9 @@ Add it as new service to your Teslamate docker-compose.yml
       - TM_DB_PASS=${TM_DB_PASS}
       - TM_DB_NAME=${TM_DB_NAME}
       - TM_DB_HOST=database
-      - POST_CONFIG_TOKEN="abcdefgh"
-      - FIO_API_TOKEN="abcdefgh"
+      - POST_CONFIG_TOKEN=abcdefgh
+      - FIO_API_TOKEN=abcdefgh
+      - TZ=Europe/Prague
     labels:
       - 'traefik.enable=true'
       - "traefik.http.middlewares.tm-datasource-redirect.redirectscheme.scheme=https"
@@ -64,9 +65,9 @@ Add it as new service to your Teslamate docker-compose.yml
       - project1
     volumes:
       - ./config.json:/etc/tesla-data-source/config.json:ro
-      - ./custom_templates:/app/templates/custom:ro
+      - ./etc:/etc/tesla-data-source:ro
 ```
-
+Add the config.json into etc subdirectory
 Remember to change the tokens. 
 Update the networks according to the other components (get inspired by **teslamate** service).
 You can ignore the labels if not using Traefik.
@@ -90,6 +91,8 @@ The same structure is used to POST to update the config
 ```json
 {
   "enabled": true,
+  "defaultPageTitle": "Teslicka Record-24",
+  "defaultPageTemplate": "dashboard.html",
   "debugSql": false,
   "carId": 1,
   "startLatitude": 49.321039,
@@ -106,6 +109,8 @@ The same structure is used to POST to update the config
   "defaultMapZoom": 16,
   "previousLaps": 10,
   "minTimeLap": 10,
+  "forecastUseLaps": 3,
+  "forecastExcludeLaps": 1,
   "mapLabels": [
     {
       "field": "car_name",
@@ -208,13 +213,15 @@ The same structure is used to POST to update the config
 
 ### Config fields meaning
 * enabled: publishing the data is enabled [true]
+* defaultPageTitle: page title when main page (/) is called
+* defaultPageTemplate: template to render when main page (/) is called
 * debugSql: log SQL queries [false]
 * carId: car identifier from the database [1]
 * startLatitude: latitude of starting point [49.321039]
 * startLongitude: longitude of stating point [13.704535]
 * startRadius: radius in meters from starting point used to initiate new lap [100]
 * startTime: time to load and process data from ["2020-12-28T10:30:00.000Z"]
-* hours: hours to be preocessed from startTime if provided, till now otherwise [24]
+* hours: hours to be processed from startTime if provided, till now otherwise [24]
 * mergeFromLap: the first lap to be merged [1]
 * lapsMerged: how many laps are merged together [1]
 * consumptionRated: rated consumption of the vehicle [14.7],
@@ -230,6 +237,8 @@ The same structure is used to POST to update the config
 * lapLabelsRecent: labels used to display lap details for recent lap
 * lapLabelsPrevious: labels used to display lap details for previous lap
 * chargingLabels: labels used to display charging details
+* forecastUseLaps: how many laps are used fo forecast total distance
+* forecastExcludeLaps": 1,
 
 ## Label formatting
 ```json

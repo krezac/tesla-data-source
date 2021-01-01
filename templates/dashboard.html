@@ -118,7 +118,11 @@
 <body>
 <div class="map_row">
     <div id="mapid" style="width: 70vw; height: 70vh;" class="map_column"></div>
-    <div id="status_text" class="map_column"></div>
+    <div class="status_text_column">
+        <div id="status_text"></div>
+        <hr/>
+        <div id="forecast_text"></div>
+    </div>
 </div>
 
 <div class="section_title">Total Race Data</div>
@@ -199,7 +203,7 @@
 
     $(document).ready(function () {
         var mymap = L.map('mapid').setView([0.0, 0.0],
-        {{ zoom or 16 }});  // default if zoom not provided
+        {{ config.defaultMapZoom or 16 }});  // default if zoom not provided
 
         var geojsonMarkerOptions = {
             radius: 8,
@@ -225,7 +229,7 @@
         // mapbox osm
         L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            maxZoom: 18,
+            maxZoom: 19,
             id: 'mapbox/streets-v11',
             tileSize: 512,
             zoomOffset: -1,
@@ -248,11 +252,13 @@
                     circleMarker.setLatLng(new L.LatLng(car_status.lat, car_status.lon));
                     circleMarker._popup.setContent(getStatusText(car_status.mapLabels))
                     $("#status_text").html(getStatusText(car_status.textLabels));
+                    $("#forecast_text").html(getStatusText(car_status.forecastLabels));
                 })
                 .fail(function () {
                     statusText = "No data";
                     circleMarker._popup.setContent(statusText);
                     $("#status_text").html(statusText);
+                    $("#forecast_text").html(statusText);
                 })
                 .always(function () {
                     // Schedule the next request when the current one's complete
@@ -273,7 +279,9 @@
 
                 })
                 .fail(function () {
-                    buildTable($("#status_text"), []);
+                    buildTable("total-lap-table", []);  // make it list so it's compatible with prev
+                    buildTable("previous-laps-table", []);
+                    buildTable("recent-lap-table", []);  // make it list so it's compatible with prev
                 })
                 .always(function () {
                     // Schedule the next request when the current one's complete
@@ -287,6 +295,7 @@
     ;
 </script>
 
-
+<hr/>
+Source code available at <a href="https://github.com/krezac/tesla-data-source" target="_blank">https://github.com/krezac/tesla-data-source</a>
 </body>
 </html>

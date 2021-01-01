@@ -7,6 +7,7 @@ from ds_types import Configuration, LapStatus, LapSplit
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+import statistics
 
 csv_template = """id,start,end,odo,time,dist,speed,soc,d_soc,rng_ideal,d_rng_ideal,rng_est,d_rng_est,rng_rated,d_rng_rated,energy_lap,energy_hour,energy_left,t_in,t_out
 {% for item in items -%}
@@ -206,8 +207,8 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
         startOdo=lap_data[0].odometer,
         endOdo=lap_data[-1].odometer,
 
-        insideTemp=lap_data[-1].inside_temp,
-        outsideTemp=lap_data[-1].outside_temp,
+        insideTemp=statistics.mean([l.inside_temp for l in lap_data]),
+        outsideTemp=statistics.mean([l.outside_temp for l in lap_data]),
 
         startSOC=lap_data[0].usable_battery_level,
         endSOC=lap_data[-1].usable_battery_level,
@@ -222,5 +223,5 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
         endRangeRated=lap_data[-1].rated_battery_range_km,
 
         consumptionRated=configuration.consumptionRated,
-        finished=True  # will be set later
+        finished=True  # will be cleared later if needed
     )

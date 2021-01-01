@@ -1,21 +1,25 @@
 {
   "enabled": true,
+  "defaultPageTitle": "Teslicka Record-24",
+  "defaultPageTemplate": "dashboard.html",
   "debugSql": false,
   "carId": 2,
   "startLatitude": 49.532655,
   "startLongitude": 12.135862,
   "startRadius": 100.0,
   "startTime": "2020-12-26T17:09:00+00:00",
-  "hours": 96,
+  "hours": 240,
   "mergeFromLap": 1,
   "lapsMerged": 1,
   "consumptionRated": 14.7,
   "statusRefreshSeconds": 3,
   "lapsRefreshSeconds": 10,
   "fioRefreshSeconds": 900,
-  "defaultMapZoom": 21,
+  "defaultMapZoom": 16,
   "previousLaps": 10,
   "minTimeLap": 10,
+  "forecastUseLaps": 3,
+  "forecastExcludeLaps": 1,
   "mapLabels": [
     {
       "field": "car_name",
@@ -413,8 +417,21 @@
       "label": "Charge Duration",
       "format_function": "format_period_fn",
       "default": "---"
+    },
+    {
+      "field": "chargeMaxPower",
+      "label": "Max Power",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kW"
+    },
+    {
+      "field": "chargeEnergyPerHour",
+      "label": "Avg Energy Charged",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh/h"
     }
-
   ],
     "chargingLabels": [
     {
@@ -426,6 +443,83 @@
       "field": "driver_name",
       "label": "Driver",
       "default": "---"
+    }
+  ],
+    "forecastLabels": [
+    {
+      "field": "avgLapDuration",
+      "label": "Avg Lap Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "avgPitDuration",
+      "label": "Avg Pit Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "avgLapFullDuration",
+      "label": "Avg Lap Full Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "avgLapDistance",
+      "label": "Avg lap Distance",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "recentLapRemainingDuration",
+      "label": "Recent Lap Remaining Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "recentLapRemainingDistance",
+      "label": "Recent Lap Remaining Distance",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "fullLapsRemaining",
+      "label": "Estimated Full Laps to end",
+      "default": "---"
+    },
+    {
+      "field": "lastLapDuration",
+      "label": "Estimated Last Lap Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "lastPitDuration",
+      "label": "Estimated Last Pit Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "lastLapFullDuration",
+      "label": "Estimated Last Lap Full Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "lastLapDistance",
+      "label": "Estimated Last lap Distance",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
+    },
+    {
+      "field": "estimatedTotalDistance",
+      "label": "Estimated Total Distance",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km"
     }
   ]
 }

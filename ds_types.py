@@ -15,6 +15,8 @@ class LabelConfigItem(BaseModel):
 
 class Configuration(BaseModel):
     enabled: bool
+    defaultPageTitle: str
+    defaultPageTemplate: str
     debugSql: bool
     carId: int
     startLatitude: float
@@ -31,12 +33,15 @@ class Configuration(BaseModel):
     defaultMapZoom: int
     previousLaps: int
     minTimeLap: int
+    forecastUseLaps: int
+    forecastExcludeLaps: int
     mapLabels: List[LabelConfigItem]
     textLabels: List[LabelConfigItem]
     lapLabelsTotal: List[LabelConfigItem]
     lapLabelsRecent: List[LabelConfigItem]
     lapLabelsPrevious: List[LabelConfigItem]
     chargingLabels: List[LabelConfigItem]
+    forecastLabels: List[LabelConfigItem]
 
 
 class CarStatus(BaseModel):
@@ -191,6 +196,9 @@ class LapStatus(BaseModel):
     def set_charge_energy_added(cls, v, values) -> pendulum.Duration:
         return values['chargeEndTime'] - values['chargeStartTime'] if values['chargeEndTime'] and values['chargeStartTime'] else pendulum.Period(pendulum.now(), pendulum.now())
 
+    chargeMaxPower: Optional[float]
+    chargeEnergyPerHour: Optional[float]
+
 
 class LapsList(BaseModel):
     __root__: List[LapStatus]
@@ -225,6 +233,7 @@ class JsonStatusResponse(BaseModel):
     lon: float
     mapLabels: List[LabelItem]
     textLabels: List[LabelItem]
+    forecastLabels: List[LabelItem]
 
 
 class ChargingProcess(BaseModel):
@@ -240,3 +249,19 @@ class ChargingProcess(BaseModel):
     start_rated_range_km: Optional[float]
     end_rated_range_km: Optional[float]
     charge_energy_used: Optional[float]
+    max_power: Optional[float]
+
+
+class ForecastResult(BaseModel):
+    avgLapDuration: pendulum.Duration
+    avgPitDuration: pendulum.Duration
+    avgLapFullDuration: pendulum.Duration
+    avgLapDistance: float
+    recentLapRemainingDuration: pendulum.Duration
+    recentLapRemainingDistance: float
+    fullLapsRemaining: int
+    lastLapDuration: pendulum.Duration
+    lastPitDuration: pendulum.Duration
+    lastLapFullDuration: pendulum.Duration
+    lastLapDistance: float
+    estimatedTotalDistance: float
