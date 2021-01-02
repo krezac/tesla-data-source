@@ -201,28 +201,28 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
     return LapStatus(
         id=split.lapId,
         startTime=pendulum.instance(lap_data[0].date, 'utc') if split.lapEntryIdx else None,
-        endTime=pendulum.instance(lap_data[-1].date, 'utc') if split.lapLeaveIdx else None,
+        endTime=pendulum.instance(lap_data[-1].date, 'utc') if split.lapEntryIdx else None,
 
         startTimePit=pendulum.instance(pit_data[0].date, 'utc') if split.pitEntryIdx else None,
-        endTimePit=pendulum.instance(pit_data[-1].date, 'utc') if split.pitLeaveIdx else None,
+        endTimePit=pendulum.instance(pit_data[-1].date, 'utc') if split.lapEntryIdx else None,
 
         startOdo=lap_data[0].odometer if split.lapEntryIdx else None,
-        endOdo=lap_data[-1].odometer if split.lapLeaveIdx else None,
+        endOdo=lap_data[-1].odometer if split.lapEntryIdx else None,  # to be able to show current lap
 
         insideTemp=statistics.mean([l.inside_temp for l in lap_data if l.inside_temp]),
         outsideTemp=statistics.mean([l.outside_temp for l in lap_data if l.outside_temp]),
 
         startSOC=lap_data[0].usable_battery_level if split.lapEntryIdx else None,
-        endSOC=lap_data[-1].usable_battery_level if split.lapLeaveIdx else None,
+        endSOC=lap_data[-1].usable_battery_level if split.lapEntryIdx else None,
 
         startRangeIdeal=lap_data[0].ideal_battery_range_km if split.lapEntryIdx else None,
-        endRangeIdeal=lap_data[-1].ideal_battery_range_km if split.lapLeaveIdx else None,
+        endRangeIdeal=lap_data[-1].ideal_battery_range_km if split.lapEntryIdx else None,
 
         startRangeEst=lap_data[0].est_battery_range_km if split.lapEntryIdx else None,
-        endRangeEst=lap_data[-1].est_battery_range_km if split.lapLeaveIdx else None,
+        endRangeEst=lap_data[-1].est_battery_range_km if split.lapEntryIdx else None,
 
         startRangeRated=lap_data[0].rated_battery_range_km if split.lapEntryIdx else None,
-        endRangeRated=lap_data[-1].rated_battery_range_km if split.lapLeaveIdx else None,
+        endRangeRated=lap_data[-1].rated_battery_range_km if split.lapEntryIdx else None,
 
         consumptionRated=configuration.consumptionRated,
         finished=True  # will be cleared later if needed
