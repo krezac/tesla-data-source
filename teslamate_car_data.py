@@ -116,7 +116,7 @@ def _update_car_laps():
                 l.chargeEndRangeRated = charging.end_rated_range_km
                 l.chargeRangeRatedAdded = charging.end_rated_range_km - charging.start_rated_range_km  # the validator doesn't fill it for some reason
                 l.chargeSocAdded = charging.end_battery_level - charging.start_battery_level  # the validator doesn't fill it for some reason
-                l.chargeDuration = pendulum.Period(charging.start_date, charging.end_date)
+                l.chargeDuration = pendulum.Period(charging.start_date, charging.end_date) if charging.start_date and charging.end_date else None
                 l.chargeMaxPower = charging.max_power
                 l.chargeEnergyPerHour = charging.charge_energy_added * 3600.0 / l.chargeDuration.in_seconds()
                 break  # load only one charging
@@ -175,9 +175,9 @@ def _calculate_lap_total(laps: List[LapStatus]) -> LapStatus:
     pit_duration = pendulum.Period(now, now)
     chargeDuration = pendulum.Period(now, now)
     for lap in laps:
-        energy += lap.energy
-        duration += lap.duration
-        pit_duration += lap.pitDuration
+        energy += lap.energy if lap.energy else 0
+        duration += lap.duration if lap.duration else pendulum.Period(now, now)
+        pit_duration += lap.pitDuration if pit_duration else pendulum.Period(now, now)
         chargeSocAdded += lap.chargeSocAdded if lap.chargeSocAdded else 0
         chargeEnergyAdded += lap.chargeEnergyAdded if lap.chargeEnergyAdded else 0
         chargeRangeAdded += lap.chargeRangeRatedAdded if lap.chargeRangeRatedAdded else 0

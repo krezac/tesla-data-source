@@ -96,30 +96,30 @@ class LapStatus(BaseModel):
     raw fields only
     """
     id: str  # string because of aggregating
-    startTime: pendulum.DateTime
+    startTime: Optional[pendulum.DateTime]
     endTime: Optional[pendulum.DateTime]
     startTimePit: Optional[pendulum.DateTime]
     endTimePit: Optional[pendulum.DateTime]
-    startOdo: float
+    startOdo: Optional[float]
     endOdo: Optional[float]
     insideTemp: Optional[float]
     outsideTemp: Optional[float]
 
 
-    startSOC: float
-    endSOC: float
+    startSOC: Optional[float]
+    endSOC: Optional[float]
     #usedSoc: float
 
-    startRangeIdeal: float
-    endRangeIdeal: float
+    startRangeIdeal: Optional[float]
+    endRangeIdeal: Optional[float]
     #usedRangeIdeal: float
 
-    startRangeEst: float
-    endRangeEst: float
+    startRangeEst: Optional[float]
+    endRangeEst: Optional[float]
     #usedRangeEst: float
 
-    startRangeRated: float
-    endRangeRated: float
+    startRangeRated: Optional[float]
+    endRangeRated: Optional[float]
     #usedRangeRated: float
 
     consumptionRated: float
@@ -131,44 +131,48 @@ class LapStatus(BaseModel):
 
     @validator('duration', always=True)
     def set_duration(cls, v, values) -> pendulum.Duration:
-        return values['endTime'] - values['startTime']
+        now = pendulum.now(tz='utc')
+        return (values['endTime'] if 'endTime' in values and values['endTime'] else now) - \
+               (values['startTime'] if 'startTime' in values and values['startTime'] else now)
 
     # calculated fields
     pitDuration: Optional[pendulum.Duration]
 
     @validator('pitDuration', always=True)
     def set_pit_uration(cls, v, values) -> pendulum.Duration:
-        return values['endTimePit'] - values['startTimePit'] if values['endTimePit'] and values['startTimePit'] else 0
+        now = pendulum.now(tz='utc')
+        return (values['endTimePit'] if 'endTimePit' in values and values['endTimePit'] else now) - \
+               (values['startTimePit'] if 'startTimePit' in values and values['startTimePit'] else now)
 
     distance: Optional[float]
 
     @validator('distance', always=True)
     def set_distance(cls, v, values) -> float:
-        return values['endOdo'] - values['startOdo']
+        return values['endOdo'] - values['startOdo'] if values['endOdo'] and values['startOdo'] else 0
 
     avgSpeed: Optional[float]
 
     @validator('avgSpeed', always=True)
     def set_avg_speed(cls, v, values) -> float:
-        return values['distance'] / values['duration'].seconds * 3600
+        return values['distance'] / values['duration'].seconds * 3600 if 'duration' in values and values['duration'] else 0
 
     startEnergy: Optional[float]
 
     @validator('startEnergy', always=True)
     def set_start_energy(cls, v, values) -> float:
-        return values['consumptionRated'] / 100 * float(values['startRangeRated'])
+        return values['consumptionRated'] / 100 * float(values['startRangeRated']) if 'startRangeRated' in values and values['startRangeRated'] else None
 
     endEnergy: Optional[float]
 
     @validator('endEnergy', always=True)
     def set_end_energy(cls, v, values) -> float:
-        return values['consumptionRated'] / 100 * float(values['endRangeRated'])
+        return values['consumptionRated'] / 100 * float(values['endRangeRated']) if 'endRangeRated' in values and values['endRangeRated'] else None
 
     energy: Optional[float]
 
     @validator('energy', always=True)
     def set_energy(cls, v, values) -> float:
-        return values['startEnergy'] - values['endEnergy']
+        return values['startEnergy'] - values['endEnergy'] if values['startEnergy'] and values['endEnergy'] else None
 
     chargeStartTime: Optional[pendulum.DateTime]
     chargeEndTime: Optional[pendulum.DateTime]

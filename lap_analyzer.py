@@ -81,6 +81,7 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
                     lapId=lapId,
                     pitEntryIdx=start_idx,
                 )
+            splits.append(current_split)  # HACK
             lapId += 1
             continue
         if dist <= region:  # we are inside the pit
@@ -90,8 +91,9 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
                     if min_time < delta_t.total_seconds():  # check time in pit
                         if current_split:  # long enough, dump the previous one to output list
                             current_split.lapLeaveIdx = pit_entry_idx
-                            splits.append(current_split)
+                            # HACK splits.append(current_split)
                         current_split = LapSplit(lapId=str(lapId), pitEntryIdx=pit_entry_idx)  # and create new one
+                        splits.append(current_split)  # HACK
                         lapId += 1
                         pit_entry_idx = None
             else:  # entered the pit (left lap)
@@ -108,8 +110,8 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
             else:  # entered the lap (left pit)
                 lap_entry_idx = i  # remember exit, start measuring time
 
-    if current_split and current_split.lapEntryIdx:  # do not include the one having just pit time
-        splits.append(current_split)
+    # HACK if current_split and current_split.lapEntryIdx:  # do not include the one having just pit time
+    # HACK    splits.append(current_split)
 
     agg_splits = aggregate_splits(configuration, splits)
 
@@ -198,29 +200,29 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
 
     return LapStatus(
         id=split.lapId,
-        startTime=pendulum.instance(lap_data[0].date, 'utc'),
-        endTime=pendulum.instance(lap_data[-1].date, 'utc'),
+        startTime=pendulum.instance(lap_data[0].date, 'utc') if split.lapEntryIdx else None,
+        endTime=pendulum.instance(lap_data[-1].date, 'utc') if split.lapLeaveIdx else None,
 
-        startTimePit=pendulum.instance(pit_data[0].date, 'utc'),
-        endTimePit=pendulum.instance(pit_data[-1].date, 'utc'),
+        startTimePit=pendulum.instance(pit_data[0].date, 'utc') if split.pitEntryIdx else None,
+        endTimePit=pendulum.instance(pit_data[-1].date, 'utc') if split.pitLeaveIdx else None,
 
-        startOdo=lap_data[0].odometer,
-        endOdo=lap_data[-1].odometer,
+        startOdo=lap_data[0].odometer if split.lapEntryIdx else None,
+        endOdo=lap_data[-1].odometer if split.lapLeaveIdx else None,
 
         insideTemp=statistics.mean([l.inside_temp for l in lap_data if l.inside_temp]),
         outsideTemp=statistics.mean([l.outside_temp for l in lap_data if l.outside_temp]),
 
-        startSOC=lap_data[0].usable_battery_level,
-        endSOC=lap_data[-1].usable_battery_level,
+        startSOC=lap_data[0].usable_battery_level if split.lapEntryIdx else None,
+        endSOC=lap_data[-1].usable_battery_level if split.lapLeaveIdx else None,
 
-        startRangeIdeal=lap_data[0].ideal_battery_range_km,
-        endRangeIdeal=lap_data[-1].ideal_battery_range_km,
+        startRangeIdeal=lap_data[0].ideal_battery_range_km if split.lapEntryIdx else None,
+        endRangeIdeal=lap_data[-1].ideal_battery_range_km if split.lapLeaveIdx else None,
 
-        startRangeEst=lap_data[0].est_battery_range_km,
-        endRangeEst=lap_data[-1].est_battery_range_km,
+        startRangeEst=lap_data[0].est_battery_range_km if split.lapEntryIdx else None,
+        endRangeEst=lap_data[-1].est_battery_range_km if split.lapLeaveIdx else None,
 
-        startRangeRated=lap_data[0].rated_battery_range_km,
-        endRangeRated=lap_data[-1].rated_battery_range_km,
+        startRangeRated=lap_data[0].rated_battery_range_km if split.lapEntryIdx else None,
+        endRangeRated=lap_data[-1].rated_battery_range_km if split.lapLeaveIdx else None,
 
         consumptionRated=configuration.consumptionRated,
         finished=True  # will be cleared later if needed
