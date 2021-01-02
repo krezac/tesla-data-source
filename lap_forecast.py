@@ -6,23 +6,31 @@ import pendulum
 logger = logging.getLogger('app.lap_forecast')
 
 
-def do_forecast(configuration: Configuration, car_laps_list: List[LapStatus], car_status: CarStatus, now_time: pendulum.DateTime) -> Optional[ForecastResult]:
+def _get_forecast_laps(configuration: Configuration, car_laps_list: List[LapStatus]) -> List[LapStatus]:
     use_laps = configuration.forecastUseLaps
     exclude_laps = configuration.forecastExcludeLaps
+
+    car_laps = [lap for lap in car_laps_list if lap.finished]  # care only about finished lap
+    logger.debug(f"{len(car_laps)} finished laps to analyze")
+
+    if not car_laps_list or len(car_laps) < (use_laps + exclude_laps):
+        logger.info(f"not enough laps ({len(car_laps)}/{len(car_laps_list)}) from {use_laps} + {exclude_laps} needed)")
+        return []
+
+    return car_laps[-use_laps:]
+
+
+def do_forecast(configuration: Configuration, car_laps_list: List[LapStatus], car_status: CarStatus, now_time: pendulum.DateTime) -> Optional[ForecastResult]:
 
     if not car_laps_list:
         return None
 
     unfinished_lap = car_laps_list[-1] if car_laps_list and not car_laps_list[-1].finished else None
-    car_laps = [lap for lap in car_laps_list if lap.finished]  # care only about finished lap
-    logger.debug(f"{len(car_laps)} finished laps to analyze")
     logger.debug(f"unfinished lap: {unfinished_lap is not None}")
 
-    if len(car_laps) < (use_laps + exclude_laps):
-        logger.info(f"not enough laps ({len(car_laps)}/{len(car_laps_list)}) from {use_laps} + {exclude_laps} needed)")
-        return
-
-    car_laps = car_laps[exclude_laps:(exclude_laps + use_laps)]
+    car_laps = _get_forecast_laps(configuration, car_laps_list)
+    if not car_laps:
+        return None
     logger.info(f"{len(car_laps)} laps to analyze")
 
     start_time = pendulum.from_timestamp(car_status.start_time.timestamp(), tz='utc')
