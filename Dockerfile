@@ -16,4 +16,6 @@ RUN pipenv install --system --deploy
 
 RUN apk del --purge .build-deps
 
+RUN date  "+%Y-%m-%dT%H:%M:%S" > templates/_VERSION.txt
+
 CMD ["python", "app.py"]
