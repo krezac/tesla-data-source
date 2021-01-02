@@ -40,11 +40,29 @@
             padding-bottom: 5px;
         }
 
+        @media only screen and (min-width: 500px) {
+            .map_row {
+                display: flex;
+            }
+        }
+
         /* Clear floats after the columns */
         .map_row:after {
             content: "";
             display: table;
             clear: both;
+        }
+
+        #mapid {
+            width: 70vw;
+            height: 500px;
+            max-height: 70vh;
+        }
+
+        @media only screen and (min-width: 500px) {
+            #mapid {
+                width: 50vw;
+            }
         }
 
         div.minimalistBlack {
@@ -111,13 +129,19 @@
             display: table-row-group;
         }
 
+        #total-lap-div, #recent-lap-div, #previous-laps-div {
+            width: 100%;
+            overflow-x: scroll;
+        }
+
 
     </style>
 
 </head>
 <body>
+
 <div class="map_row">
-    <div id="mapid" style="width: 70vw; height: 70vh;" class="map_column"></div>
+    <div id="mapid" class="map_column"></div>
     <div class="status_text_column">
         <div id="status_text"></div>
         <hr/>
