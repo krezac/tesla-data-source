@@ -206,6 +206,11 @@ def driver_change():
 
 
 # ########### web endpoints ############
+@app.route('/version')
+def get_version():
+    return render_template('_VERSION.txt')
+
+
 @app.route('/car_map')
 def car_map():
     if not _configuration.enabled:
@@ -237,8 +242,7 @@ def get_tm_car_data():
     if not _configuration.enabled:
         return render_template('not_enabled.html')
 
-    items = teslamate_car_data.get_car_laps()
-    return render_template('laps_table.html', items=items, title="Laps")
+    return render_template('laps_table.html', title="Laps")
 
 
 #@app.route('/tesla_logger_car_data')
