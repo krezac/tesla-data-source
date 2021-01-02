@@ -9,30 +9,11 @@
 
    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico"/>
 
-   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-         integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-         crossorigin=""/>
-   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-           integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-           crossorigin=""></script>
    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 
 
    <style>
-      .map_column {
-         float: left;
-         /* width: 50%; */
-         padding-left: 40px;
-         padding-right: 40px;
-      }
-
-      .status_text_column {
-         float: left;
-         /* width: 50%; */
-         padding-left: 40px;
-         padding-right: 40px;
-      }
 
       .section_title {
          font-weight: bold;
@@ -43,25 +24,6 @@
       @media only screen and (min-width: 500px) {
          .map_row {
             display: flex;
-         }
-      }
-
-      /* Clear floats after the columns */
-      .map_row:after {
-         content: "";
-         display: table;
-         clear: both;
-      }
-
-      #mapid {
-         width: 70vw;
-         height: 500px;
-         max-height: 70vh;
-      }
-
-      @media only screen and (min-width: 500px) {
-         #mapid {
-            width: 50vw;
          }
       }
 
@@ -119,10 +81,6 @@
 
       .divTableHeading {
          display: table-header-group;
-      }
-
-      .divTableFoot {
-         display: table-footer-group;
       }
 
       .divTableBody {
