@@ -30,6 +30,24 @@
       "field": "driver_name",
       "label": "Driver",
       "default": "---"
+    },
+    {
+      "field": "lap",
+      "label": "Lap",
+      "default": "---"
+    },
+    {
+      "field": "lap_time",
+      "label": "Lap Time",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "lap_distance",
+      "label": "Lap distance",
+      "format_function": "format_float_fn",
+      "format": "%.2f",
+      "default": "---"
     }
   ],
   "textLabels": [

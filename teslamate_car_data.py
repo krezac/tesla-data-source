@@ -39,6 +39,7 @@ def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configu
         current_lap = _car_laps_list[-1]
         status.lap = current_lap.id
         status.lap_distance = current_lap.distance
+        status.lap_time = current_lap.duration
 
 
 def _update_car_status():

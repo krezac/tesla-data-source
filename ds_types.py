@@ -79,6 +79,7 @@ class CarStatus(BaseModel):
     distance: Optional[float]
     lap: Optional[str]
     lap_distance: Optional[float]
+    lap_time: Optional[pendulum.Duration]
     start_time: Optional[pendulum.DateTime]
     end_time: Optional[pendulum.DateTime]
     time_since_start: Optional[pendulum.Duration]
