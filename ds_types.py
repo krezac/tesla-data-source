@@ -84,6 +84,7 @@ class CarStatus(BaseModel):
     end_time: Optional[pendulum.DateTime]
     time_since_start: Optional[pendulum.Duration]
     time_to_end: Optional[pendulum.Duration]
+    direct_start_distance: Optional[float]
 
 
 class Balance(BaseModel):
@@ -139,7 +140,7 @@ class LapStatus(BaseModel):
     pitDuration: Optional[pendulum.Duration]
 
     @validator('pitDuration', always=True)
-    def set_pit_uration(cls, v, values) -> pendulum.Duration:
+    def set_pit_duration(cls, v, values) -> pendulum.Duration:
         now = pendulum.now(tz='utc')
         return (values['endTimePit'] if 'endTimePit' in values and values['endTimePit'] else now) - \
                (values['startTimePit'] if 'startTimePit' in values and values['startTimePit'] else now)
@@ -149,6 +150,8 @@ class LapStatus(BaseModel):
     @validator('distance', always=True)
     def set_distance(cls, v, values) -> float:
         return values['endOdo'] - values['startOdo'] if values['endOdo'] and values['startOdo'] else 0
+
+    direct_start_distance: Optional[float]
 
     avgSpeed: Optional[float]
 

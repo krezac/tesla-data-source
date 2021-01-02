@@ -88,7 +88,7 @@ def find_laps(configuration: Configuration, segment, region=10, min_time=5, star
             if distance[i - 1] <= region:  # was in pit before
                 if pit_entry_idx:  # not recorded yet
                     delta_t = time[i] - time[pit_entry_idx]
-                    if min_time < delta_t.total_seconds():  # check time in pit
+                    if min_time < delta_t.total_seconds() or (i == (len(distance) - 1)):  # check time in pit (if last point and in pit, create anyway
                         if current_split:  # long enough, dump the previous one to output list
                             current_split.lapLeaveIdx = pit_entry_idx
                             # HACK splits.append(current_split)

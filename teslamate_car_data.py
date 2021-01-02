@@ -8,6 +8,8 @@ from labels import generate_labels
 import lap_analyzer
 from lap_forecast import do_forecast
 from datetime import datetime, timezone
+from gpxplotter.gpxread import vincenty
+
 
 logger = logging.getLogger('app.car_data')
 
@@ -34,6 +36,11 @@ def _add_calculated_fields(status: CarStatus, initial_status: CarStatus, configu
     status.distance = status.odometer - initial_status.odometer if status.odometer and initial_status.odometer else 0
     status.time_since_start = pendulum.period(start_time, now, True) if now >= start_time else pendulum.period(now, now, True)
     status.time_to_end = pendulum.period(now, end_time, True) if now <= end_time else pendulum.period(now, now, True)
+
+    start = (configuration.startLatitude, configuration.startLongitude)
+    loc = (status.latitude, status.longitude)
+    status.direct_start_distance = vincenty(loc, start) / 1000.0  # from m to km
+
 
     if _car_laps_list:
         current_lap = _car_laps_list[-1]
