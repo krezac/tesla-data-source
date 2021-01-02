@@ -449,6 +449,36 @@
       "format_function": "format_float_fn",
       "format": "%.1f",
       "unit": "kWh/h"
+    },
+    {
+      "field": "fullDuration",
+      "label": "Full Duration",
+      "format_function": "format_period_fn",
+      "default": "---"
+    },
+    {
+      "field": "avgSpeedInclCharging",
+      "label": "Avg Speed Incl Charging",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "km/h",
+      "default": "---"
+    },
+    {
+      "field": "usedEnergyPerHour",
+      "label": "Used Energy/h",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "kWh/h",
+      "default": "---"
+    },
+    {
+      "field": "usedEnergyPerKm",
+      "label": "Used Energy/km",
+      "format_function": "format_float_fn",
+      "format": "%.1f",
+      "unit": "Wh/km",
+      "default": "---"
     }
   ],
     "chargingLabels": [

@@ -145,6 +145,16 @@ class LapStatus(BaseModel):
         return (values['endTimePit'] if 'endTimePit' in values and values['endTimePit'] else now) - \
                (values['startTimePit'] if 'startTimePit' in values and values['startTimePit'] else now)
 
+    fullDuration: Optional[pendulum.Duration]
+
+    @validator('fullDuration', always=True)
+    def set_full_duration(cls, v, values) -> pendulum.Duration:
+        now = pendulum.now(tz='utc')
+        return (values['endTime'] if 'endTime' in values and values['endTime'] else now) - \
+               (values['startTimePit'] if 'startTimePit' in values and values['startTimePit']
+                else values['startTime'] if 'startTime' in values and values['startTime'] else now)
+
+
     distance: Optional[float]
 
     @validator('distance', always=True)
@@ -206,6 +216,24 @@ class LapStatus(BaseModel):
 
     chargeMaxPower: Optional[float]
     chargeEnergyPerHour: Optional[float]
+
+    usedEnergyPerHour: Optional[float]
+    @validator('usedEnergyPerHour', always=True)
+    def set_used_energy_per_hour(cls, v, values) -> float:
+        return values['energy'] / values['fullDuration'].seconds * 3600 if values['energy'] and values['fullDuration'] else None
+
+
+    usedEnergyPerKm: Optional[float]
+    @validator('usedEnergyPerKm', always=True)
+    def set_used_energy_per_km(cls, v, values) -> float:
+        return 1000 * values['energy'] / values['distance'] if values['energy'] and values['distance'] else None
+
+
+    avgSpeedInclCharging: Optional[float]
+
+    @validator('avgSpeedInclCharging', always=True)
+    def set_avg_speed_incl_charging(cls, v, values) -> float:
+        return values['distance'] / values['fullDuration'].seconds * 3600 if 'fullDuration' in values and values['fullDuration'] else None
 
 
 class LapsList(BaseModel):
