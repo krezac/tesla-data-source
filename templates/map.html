@@ -2,12 +2,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-	
+
 	<title>Car status and position</title>
 
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
+
 	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
@@ -16,29 +16,15 @@
 
 
 <style>
-    .column {
-        float: left;
-        width: 50%;
-        padding-left: 40px;
-        padding-right: 40px;
-    }
-
-    /* Clear floats after the columns */
-    .row:after {
-        content: "";
-        display: table;
-        clear: both;
+    body {
+        margin: 0;
     }
 </style>
 
 </head>
 <body>
-<h1>Car status and position - old version</h1>
 
-<div class="row">
-    <div id="mapid" style="width: 600px; height: 400px;" class="column"></div>
-    <div id="status_text" class="column"></div>
-</div>
+<div id="mapid" style="width: 100vw; height: 100vh" class="column"></div>
 
 <script>
     function getStatusText(car_status_labels) {
@@ -98,12 +84,10 @@
               car_status = data
               circleMarker.setLatLng(new L.LatLng(car_status.lat, car_status.lon));
               circleMarker._popup.setContent(getStatusText(car_status.mapLabels))
-              $("#status_text").html(getStatusText(car_status.textLabels));
             })
           .fail(function() {
               statusText = "No data";
                 circleMarker._popup.setContent(statusText);
-                $("#status_text").html(statusText);
             })
           .always(function() {
               // Schedule the next request when the current one's complete
