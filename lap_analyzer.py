@@ -197,6 +197,15 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
     pit_stop = split.pitLeaveIdx + 1 if split.pitLeaveIdx else len(segment) - 1
     pit_data = segment[pit_start:pit_stop]
 
+    # try to calculate real energy
+    real_energy = 0.0
+    for i in range(1, len(lap_data)):
+        real_energy += (lap_data[i].power * pendulum.Period(lap_data[i-1].date, lap_data[i].date).total_seconds())/3600
+    # it's in kWs
+    real_energy_hour = real_energy / pendulum.Period(lap_data[0].date, lap_data[-1].date).seconds * 3600
+
+    real_energy_km = real_energy / (lap_data[-1].odometer - lap_data[0].odometer) * 1000
+
 
     ls =  LapStatus(
         id=split.lapId,
@@ -225,6 +234,10 @@ def extract_lap_status(configuration: Configuration, split: LapSplit, segment) -
         endRangeRated=lap_data[-1].rated_battery_range_km if split.lapEntryIdx is not None else None,
 
         consumptionRated=configuration.consumptionRated,
-        finished=True  # will be cleared later if needed
+        finished=True,  # will be cleared later if needed
+
+        real_energy=real_energy,
+        real_energy_km=real_energy_km,
+        real_energy_hour=real_energy_hour,
     )
     return ls

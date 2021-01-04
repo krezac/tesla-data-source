@@ -196,6 +196,10 @@ class LapStatus(BaseModel):
     chargeEndRangeRated: Optional[float]
     chargeSocAdded: Optional[float]
 
+    real_energy: Optional[float]
+    real_energy_km: Optional[float]
+    real_energy_hour: Optional[float]
+
     # TODO this doesn't work for some reason (the one above does). explicit assignement in car_data
     # @validator('chargeSocAdded', always=True)
     # def set_soc_added(cls, v, values) -> float:
