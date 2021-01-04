@@ -63,7 +63,7 @@ def _update_car_status():
         logger.debug("updating initial car status done")
 
     logger.debug("updating car status")
-    _car_status = _initial_status  # # TODO this is hack to lock the status _data_source.get_car_status(_get_configuration_func(), datetime.now(tz=timezone.utc))
+    _car_status = _data_source.get_car_status(_get_configuration_func(), pendulum.parse('2021-01-03 02:26:39', tz='utc'))
     if _car_status and _initial_status:
         logger.debug("updating calculated fields")
         _add_calculated_fields(_car_status, _initial_status, _get_configuration_func())
